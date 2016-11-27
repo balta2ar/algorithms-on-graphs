@@ -63,14 +63,14 @@ def main():
 
     graph_draw(g, pos,
                vertex_text=g.vertex_index,
-               vertex_size=1,
-               vertex_font_size=2,
+               vertex_size=10,
+               vertex_font_size=20,
                vertex_color=[0,1,1,0],
                #vertex_fill_color=[0.6,1,0,0.9],
                vertex_fill_color=color,
                #vertex_color=color,
-               edge_pen_width=0.2,
-               edge_marker_size=1,
+               edge_pen_width=2,
+               edge_marker_size=10,
                output=dest)
 
 

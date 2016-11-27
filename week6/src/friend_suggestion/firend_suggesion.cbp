@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="friend_suggesion" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Option extended_obj_names="1" />
+		<Build>
+			<Target title="DMain">
+				<Option output="bin/DMain/friend_suggesion" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/DMain/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++14" />
+					<Add option="-g" />
+					<Add option="-DMAIN" />
+				</Compiler>
+				<Linker>
+					<Add option="-lm -lSegFault" />
+				</Linker>
+			</Target>
+			<Target title="DUnit">
+				<Option output="bin/DUnit/unittest" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/DUnit/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++14" />
+					<Add option="-g" />
+					<Add option="-DTEST" />
+				</Compiler>
+				<Linker>
+					<Add option="-lm -lSegFault" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="friend_suggestion.cpp" />
+		<Unit filename="friend_suggestion.hpp" />
+		<Unit filename="unittest.cpp">
+			<Option target="DUnit" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

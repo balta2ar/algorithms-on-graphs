@@ -2,9 +2,11 @@
 #include <cassert>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <limits>
 #include <utility>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -31,6 +33,7 @@ ostream& operator<<(ostream& os, const pair<Len, int> p) {
 class Bidijkstra {
     // Number of nodes
     int n_;
+    int m_;
     // Graph adj_[0] and cost_[0] correspond to the initial graph,
     // adj_[1] and cost_[1] correspond to the reversed graph.
     // Graphs are stored as vectors of adjacency lists corresponding
@@ -51,8 +54,9 @@ class Bidijkstra {
     vector<vector<int>> parent_;
 
 public:
-    Bidijkstra(int n, Adj adj, Adj cost)
+    Bidijkstra(int n, int m, Adj adj, Adj cost)
         : n_(n),
+          m_(m),
           adj_(adj),
           cost_(cost),
           distance_(2, vector<Len>(n, INFINITY)),
@@ -60,6 +64,24 @@ public:
           visited_(n)
     {
         workset_.reserve(n);
+    }
+
+    __attribute_used__
+    int saveToFile(string filename) {
+        ofstream file(filename);
+        if (!file.is_open()) {
+            return 0;
+        }
+
+        file << n_ << " " << m_ << endl;
+        for (int from = 0; from < adj_[0].size(); from++) {
+            for (int i = 0; i < adj_[0][from].size(); i++) {
+                int to = adj_[0][from][i];
+                file << from+1 << " " << to+1 << " " << cost_[0][from][i] << endl;
+            }
+        }
+        file.close();
+        return 0;
     }
 
     // Initialize the data structures before new query,
@@ -82,13 +104,23 @@ public:
     }
 
     void backtrack(int source, int target) {
+        stack<int> path;
+
         int current = target;
-        cout << "THE PATH" << endl;
+        // cout << "THE PATH" << endl;
         while (current != source) {
-            cout << current << " <- ";
+            //cerr << current + 1 << " ";
+            path.push(current);
             current = parent_[0][current];
         }
-        cout << source << endl;
+        path.push(source);
+
+        while (!path.empty()) {
+            cerr << path.top() + 1 << " ";
+            path.pop();
+        }
+        cerr << endl;
+        //cerr << source + 1 << endl;
     }
 
     // Returns the distance from s to t in the graph.
@@ -97,7 +129,7 @@ public:
         Queue front(2);
         distance_[0][source] = 0;
 
-        front[0].push(pair<Len, int>(0, source));
+        front[0].push({0, source});
 
         while (!front[0].empty()) {
             pair<Len, int> node = front[0].top();
@@ -129,7 +161,8 @@ public:
                 //     << " to " << neighbor
                 //     << " = " << cost_[0][node.second][neighbor] << endl;
 
-                front[0].push(pair<Len, int>(alt, neighbor));
+                //front[0].push(pair<Len, int>(alt, neighbor));
+                front[0].push({alt, neighbor});
 
                 if (alt < distance_[0][neighbor]) {
                     distance_[0][neighbor] = alt;
@@ -145,34 +178,92 @@ public:
         if (distance_[0][target] == INFINITY) {
             return -1;
         }
-        // backtrack(source, target);
+        #ifdef MAIN
+        backtrack(source, target);
+        #endif // MAIN
         return distance_[0][target];
         //return -1;
     }
 };
 
-Bidijkstra readFromStdin() {
+Bidijkstra generateUnconnected(int numVertices) {
+    Adj adj(2, vector<vector<int>>(numVertices));
+    Adj cost(2, vector<vector<int>>(numVertices));
+    Bidijkstra result = Bidijkstra(numVertices, 0, adj, cost);
+    return result;
+}
+
+Bidijkstra generateStraight(int numVertices, int edgeCost) {
+    Adj adj(2, vector<vector<int>>(numVertices));
+    Adj cost(2, vector<vector<int>>(numVertices));
+    for (int i = 0; i < numVertices - 1; ++i) {
+        adj[0][i].push_back(i+1);
+        cost[0][i].push_back(edgeCost);
+        adj[1][i].push_back(i+1);
+        cost[1][i].push_back(edgeCost);
+    }
+    Bidijkstra result = Bidijkstra(numVertices, numVertices - 1, adj, cost);
+    //result.saveToFile("dummy.txt");
+    return result;
+}
+
+Bidijkstra generateDual(int numVertices1, int edgeCost1, int numVertices2, int edgeCost2) {
+    int n = numVertices1 + numVertices2;
+    int m = n;
+
+    Adj adj(2, vector<vector<int>>(n));
+    Adj cost(2, vector<vector<int>>(n));
+
+    auto add = [&adj, &cost](int from, int to, int edgeCost) {
+        adj[0][from].push_back(to);
+        cost[0][from].push_back(edgeCost);
+        adj[1][from].push_back(to);
+        cost[1][from].push_back(edgeCost);
+    };
+
+    for (int i = 0; i < numVertices1 - 1; ++i) {
+        add(i, i+1, edgeCost1);
+    }
+    add(0, numVertices1, edgeCost2);
+    for (int i = numVertices1; i < numVertices1 + numVertices2 - 1; ++i) {
+        add(i, i+1, edgeCost2);
+    }
+    add(numVertices1 + numVertices2 - 1, numVertices1-1, edgeCost2);
+
+    Bidijkstra result = Bidijkstra(n, m, adj, cost);
+    //result.saveToFile("dummy.txt");
+    return result;
+}
+
+//void dummy() {
+//    Adj adj(2, vector<vector<int>>(0));
+//    Adj cost(2, vector<vector<int>>(0));
+//    Bidijkstra temp(0, 0, adj, cost);
+//    temp.saveToFile("/dev/null");
+//}
+
+Bidijkstra readFromFile(FILE *file) {
     int n, m;
-    scanf("%d%d", &n, &m);
+    fscanf(file, "%d%d", &n, &m);
     Adj adj(2, vector<vector<int>>(n));
     Adj cost(2, vector<vector<int>>(n));
     for (int i=0; i<m; ++i) {
         int u, v, c;
-        scanf("%d%d%d", &u, &v, &c);
+        fscanf(file, "%d%d%d", &u, &v, &c);
         adj[0][u-1].push_back(v-1);
         cost[0][u-1].push_back(c);
         adj[1][v-1].push_back(u-1);
         cost[1][v-1].push_back(c);
     }
-    return Bidijkstra(n, adj, cost);
+    return Bidijkstra(n, m, adj, cost);
 }
 
-void processStdin(Bidijkstra& bidij) {
+void processFile(FILE *file, Bidijkstra& bidij) {
     int t;
-    scanf("%d", &t);
+    fscanf(file, "%d", &t);
     for (int i=0; i<t; ++i) {
         int u, v;
-        scanf("%d%d", &u, &v);
+        fscanf(file, "%d%d", &u, &v);
         //printf("incoming query #%d, (%d,%d)\n", i, u-1, v-1);
         int result = bidij.query(u-1, v-1);
         printf("%d\n", result);
@@ -181,7 +272,11 @@ void processStdin(Bidijkstra& bidij) {
     }
 }
 
+#ifdef MAIN
 int main() {
-    Bidijkstra bidij = readFromStdin();
-    processStdin(bidij);
+    Bidijkstra bidij = readFromFile(stdin);
+    processFile(stdin, bidij);
+    //bidij.saveToFile("saved.txt");
 }
+#endif // MAIN
+
