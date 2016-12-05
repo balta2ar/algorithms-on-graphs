@@ -43,7 +43,7 @@ public:
     void saveToFile(string filename);
     void clear();
     void visit(Queue& front, int side, int v, Len dist);
-    void backtrack(int source, int target);
+    Len backtrack(int source, int target);
     Len query(int source, int target);
 };
 

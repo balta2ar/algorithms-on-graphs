@@ -60,8 +60,8 @@ public:
           adj_(adj),
           cost_(cost),
           distance_(2, vector<Len>(n, INFINITY)),
-          parent_(2, vector<int>(n, -1)),
-          visited_(n)
+          visited_(n),
+          parent_(2, vector<int>(n, -1))
     {
         workset_.reserve(n);
     }
@@ -74,8 +74,8 @@ public:
         }
 
         file << n_ << " " << m_ << endl;
-        for (int from = 0; from < adj_[0].size(); from++) {
-            for (int i = 0; i < adj_[0][from].size(); i++) {
+        for (size_t from = 0; from < adj_[0].size(); from++) {
+            for (size_t i = 0; i < adj_[0][from].size(); i++) {
                 int to = adj_[0][from][i];
                 file << from+1 << " " << to+1 << " " << cost_[0][from][i] << endl;
             }
@@ -88,39 +88,68 @@ public:
     // clear the changes made by the previous query.
     void clear() {
 
-        for (int i = 0; i < workset_.size(); ++i) {
+        for (size_t i = 0; i < workset_.size(); ++i) {
             int v = workset_[i];
             distance_[0][v] = distance_[1][v] = INFINITY;
             visited_[v] = false;
+            parent_[0][v] = parent_[1][v] = -1;
         }
         workset_.clear();
     }
 
-    // Processes visit of either forward or backward search
-    // (determined by value of side), to node v trying to
-    // relax the current distance by dist.
-    void visit(Queue& front, int side, int v, Len dist) {
-        // Implement this method yourself
-    }
-
-    void backtrack(int source, int target) {
+    Len backtrack(int source, int target) {
         stack<int> path;
 
         int current = target;
-        // cout << "THE PATH" << endl;
         while (current != source) {
-            //cerr << current + 1 << " ";
             path.push(current);
             current = parent_[0][current];
         }
         path.push(source);
 
         while (!path.empty()) {
-            cerr << path.top() + 1 << " ";
+            //cerr << path.top() + 1 << " ";
             path.pop();
         }
-        cerr << endl;
-        //cerr << source + 1 << endl;
+        //cerr << endl;
+
+        return distance_[0][target];
+    }
+
+    // Processes visit of either forward or backward search
+    // (determined by value of side), to node u trying to
+    // relax the current distance by dist.
+    void visit(Queue& front, int side, int u, Len dist) {
+        // Implement this method yourself
+        if (visited_[u]) {
+            return;
+        }
+
+        auto neighbors = adj_[0][u];
+        for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
+            int v = neighbors[v_index];
+
+            if (!visited_[v]) {
+                relax(front, u, v, v_index);
+            }
+        }
+
+        visited_[u] = true;
+        workset_.push_back(u);
+        #ifdef MAIN
+        cerr << u << endl;
+        #endif // MAIN
+    }
+
+    void relax(Queue &front, int u, int v, int v_index) {
+        Len alt = distance_[0][u] + cost_[0][u][v_index];
+
+        if (alt < distance_[0][v]) {
+            distance_[0][v] = alt;
+            parent_[0][v] = u;
+        }
+
+        front[0].push({alt, v});
     }
 
     // Returns the distance from s to t in the graph.
@@ -135,39 +164,10 @@ public:
             pair<Len, int> node = front[0].top();
             front[0].pop();
 
-            //auto node = front[0].pop();
-            // cout << "<<< another node " << node << endl;
-            visited_[node.second] = true;
-            workset_.push_back(node.second);
+            visit(front, 0, node.second, node.first);
 
             if (node.second == target) {
-                // cout << "reached target " << target << endl;
-                break;
-            }
-
-            //for (int neighbor : adj_[0][node.second]) {
-            auto neighbors = adj_[0][node.second];
-            for (int neighbor_index = 0; neighbor_index < neighbors.size(); neighbor_index++) {
-                int neighbor = neighbors[neighbor_index];
-
-                if (visited_[neighbor]) {
-                    continue;
-                }
-                int alt = distance_[0][node.second] + cost_[0][node.second][neighbor_index];
-                // cout << "neighbor_index " << neighbor_index << " is " << neighbor << " alt " << alt << endl;
-                // cout << "dist to node " << node.second
-                //     << " = " << distance_[0][node.second] << endl;
-                // cout << "cost from " << node.second
-                //     << " to " << neighbor
-                //     << " = " << cost_[0][node.second][neighbor] << endl;
-
-                //front[0].push(pair<Len, int>(alt, neighbor));
-                front[0].push({alt, neighbor});
-
-                if (alt < distance_[0][neighbor]) {
-                    distance_[0][neighbor] = alt;
-                    parent_[0][neighbor] = node.second;
-                }
+                return backtrack(source, target);
             }
         }
 
@@ -175,14 +175,10 @@ public:
         //visit(front, 1, target, 0);
         // Implement the rest of the algorithm yourself
 
-        if (distance_[0][target] == INFINITY) {
-            return -1;
-        }
-        #ifdef MAIN
-        backtrack(source, target);
-        #endif // MAIN
-        return distance_[0][target];
-        //return -1;
+//        #ifdef MAIN
+//        backtrack(source, target);
+//        #endif // MAIN
+        return -1;
     }
 };
 
@@ -272,11 +268,10 @@ void processFile(FILE *file, Bidijkstra& bidij) {
     }
 }
 
-#ifdef MAIN
+//#ifdef MAIN
 int main() {
     Bidijkstra bidij = readFromFile(stdin);
     processFile(stdin, bidij);
     //bidij.saveToFile("saved.txt");
 }
-#endif // MAIN
-
+//#endif // MAIN
