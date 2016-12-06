@@ -1,5 +1,5 @@
 import sys
-
+import numpy as np
 
 
 def draw_graph_pillow(visited, coordinates, output):
@@ -29,11 +29,13 @@ def read_graph(filename):
 
 
 def read_coords(filename):
-    coords = []
-    for line in open(filename):
-        x, y = line.split()
-        x, y = float(x), float(y)
-        coords.append((x, y))
+    with open(filename) as file:
+        n = int(file.readline().strip())
+        coords = np.empty((n, 2))
+        for i in range(n):
+            x, y = file.readline().strip().split()
+            x, y = float(x), float(y)
+            coords[i] = (x, y)
     return coords
 
 def read_visited(filename):
@@ -51,7 +53,7 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     edges = read_graph(input_graph)
     coords = read_coords(coordinates)
 
-    WIDTH, HEIGHT, SCALE = 2000, 2000, 40
+    WIDTH, HEIGHT = 20000, 20000
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
     ctx = cairo.Context(surface)
 
@@ -59,10 +61,27 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     ctx.rectangle(-WIDTH, -HEIGHT, WIDTH*2, HEIGHT*2)
     ctx.fill()
 
+    min_x, min_y = coords.min(axis=0)
+    max_x, max_y = coords.max(axis=0)
+    dw, dh = max_x - min_x, max_y - min_y
+    print('dw dh', dw, dh)
+    print('mins', min_x, min_y, max_x, max_y)
+    ratiow, ratiov = WIDTH / dw, HEIGHT / dh
+    scale = min(ratiow, ratiov)
+    print('ratios', ratiow, ratiov)
+
     w = h = 0.3
     offset = 0.15
-    ctx.translate(WIDTH/2. + 200, HEIGHT/2. - 200)
-    ctx.scale(SCALE, SCALE)
+    #ctx.translate(WIDTH/2. + 200, HEIGHT/2. - 200)
+    #ctx.scale(SCALE, SCALE)
+    #ctx.translate(min_x + dw/2., min_y + dh/2.)
+    #tx, ty = dw * ratiow / 2. + min_x, dh * ratiov / 2. + min_y
+    #tx, ty = WIDTH/2. + min_x - dw, HEIGHT/2. + min_y - dh
+    tx, ty = -min_x, -min_y
+    print('ts', tx, ty)
+    #ctx.scale(ratiow, ratiov)
+    ctx.scale(scale, scale)
+    ctx.translate(tx, ty)
 
     def draw_line(x1, y1, x2, y2):
         ctx.save()
