@@ -15,7 +15,7 @@ using namespace std;
 typedef vector<vector<vector<int>>> Adj;
 
 // Distances can grow out of int type
-typedef long long Len;
+typedef unsigned long long Len;
 
 // Vector of two priority queues - for forward and backward searches.
 // Each priority queue stores the closest unprocessed node in its head.
@@ -23,7 +23,7 @@ typedef vector<priority_queue<pair<Len, int>,
                               vector<pair<Len, int>>,
                               greater<pair<Len, int>>>> Queue;
 
-const Len INFINITY = numeric_limits<Len>::max() / 4;
+const Len INFINITY = numeric_limits<Len>::max();
 
 ostream& operator<<(ostream& os, const pair<Len, int> p) {
     os << "(len=" << p.first << ",node=" << p.second << ")";

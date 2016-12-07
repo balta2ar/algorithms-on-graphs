@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from os.path import basename
 
 
 def draw_graph_pillow(visited, coordinates, output):
@@ -61,6 +62,11 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     ctx.rectangle(-WIDTH, -HEIGHT, WIDTH*2, HEIGHT*2)
     ctx.fill()
 
+    smallest_side = min(WIDTH, HEIGHT)
+    while (coords.max() - coords.min()) > smallest_side:
+        coords = coords / 10.
+        print('Scaled down by 10, max min = %s %s' % (coords.max(), coords.min()))
+
     min_x, min_y = coords.min(axis=0)
     max_x, max_y = coords.max(axis=0)
     dw, dh = max_x - min_x, max_y - min_y
@@ -98,22 +104,33 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
         ctx.stroke()
         ctx.restore()
 
-    for (x, y) in coords:
+    num = None # 10000
+    limited = coords[:num] if num is not None else coords
+    for i, (x, y) in enumerate(limited):
+        sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
+        sys.stdout.flush()
         ctx.set_source_rgba(0.5, 0.5, 0.5, 0.7)
         ctx.set_line_width(0.6)
         draw_circle(x, y, w, h)
         #print(x, y)
+    print('')
 
-    for (u, v) in edges: #[:10]:
+    limited = edges[:num] if num is not None else edges
+    for i, (u, v) in enumerate(limited): #edges: #[:10]:
+        sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
+        sys.stdout.flush()
         a, b = coords[u], coords[v]
         ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
         ctx.set_line_width(0.1)
         draw_line(a[0], a[1], b[0], b[1])
+    print('')
 
     i = 0
     #surface.write_to_png(output)
-    surface.write_to_png('frames/%06d.png' % i)
-    return
+    print('Writing to %s' % output)
+    #surface.write_to_png('frames/%06d.png' % i)
+    surface.write_to_png(output)
+    #return
 
     visited = read_visited(visited_filename)
     for node in visited:
@@ -122,10 +139,13 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
         ctx.set_source_rgba(0.9, 0.1, 0.1, 0.7)
         ctx.set_line_width(0.5)
         draw_circle(x, y, w, h)
-        surface.write_to_png('frames/%06d.png' % i)
+        #surface.write_to_png('frames/%06d.png' % i)
         i += 1
         #if i > 10:
         #    break
+    visited_output = basename(output).rsplit('.', 1)[0] + '.visited.png'
+    print('Writing to %s' % visited_output)
+    surface.write_to_png(visited_output)
 
 def main():
     input_graph = sys.argv[1]
