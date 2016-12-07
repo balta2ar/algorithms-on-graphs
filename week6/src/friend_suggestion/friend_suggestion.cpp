@@ -119,41 +119,56 @@ public:
     // Processes visit of either forward or backward search
     // (determined by value of side), to node u trying to
     // relax the current distance by dist.
-    void visit(Queue& front, int side, int u, Len dist) {
-        // Implement this method yourself
-        if (visited_[u]) {
-            return;
-        }
-
-        auto neighbors = adj_[0][u];
-        for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
-            int v = neighbors[v_index];
-
-            if (!visited_[v]) {
-                relax(front, u, v, v_index);
-            }
-        }
-
-        visited_[u] = true;
-        workset_.push_back(u);
-        #ifdef MAIN
-        cerr << u << endl;
-        #endif // MAIN
-    }
+    // void visit(Queue& front, int side, int u, Len dist) {
+    //     // Implement this method yourself
+    //     // if (visited_[u]) {
+    //     //     return;
+    //     // }
+    //
+    //     auto neighbors = adj_[0][u];
+    //     for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
+    //         int v = neighbors[v_index];
+    //         relax(front, u, v, v_index);
+    //
+    //         // if (!visited_[v]) {
+    //         //     relax(front, u, v, v_index);
+    //         // }
+    //     }
+    //
+    //     visited_[u] = true;
+    //     workset_.push_back(u);
+    //     #ifdef MAIN
+    //     cerr << u << endl;
+    //     #endif // MAIN
+    // }
 
     void relax(Queue &front, int u, int v, int v_index) {
         Len alt = distance_[0][u] + cost_[0][u][v_index];
 
+        // if (distance_[0][v] == INFINITY) {
+        //     distance_[0][v] = alt;
+        //     parent_[0][v] = u;
+        //     front[0].push({alt, v});
+        // } else {
+        //     distance_[0][v] = min(distance_[0][v], alt);
+        // }
+
         if (alt < distance_[0][v]) {
             distance_[0][v] = alt;
             parent_[0][v] = u;
+
+            front[0].push({alt, v});
         }
 
-        front[0].push({alt, v});
+        //front[0].push({alt, v});
+    }
+
+    Len query(int source, int target) {
+        return query_onedirectional(source, target);
     }
 
     // Returns the distance from s to t in the graph.
-    Len query(int source, int target) {
+    Len query_onedirectional(int source, int target) {
         clear();
         Queue front(2);
         distance_[0][source] = 0;
@@ -164,20 +179,34 @@ public:
             pair<Len, int> node = front[0].top();
             front[0].pop();
 
-            visit(front, 0, node.second, node.first);
+            int u = node.second;
+            auto neighbors = adj_[0][u];
+            for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
+                int v = neighbors[v_index];
+                Len alt = distance_[0][u] + cost_[0][u][v_index];
 
-            if (node.second == target) {
-                return backtrack(source, target);
+                if (alt < distance_[0][v]) {
+                    distance_[0][v] = alt;
+                    parent_[0][v] = u;
+
+                    front[0].push({alt, v});
+                }
             }
+
+            visited_[u] = true;
+            workset_.push_back(u);
+            #ifdef MAIN
+            cerr << u << endl;
+            #endif // MAIN
         }
 
         //visit(front, 0, source, 0);
         //visit(front, 1, target, 0);
         // Implement the rest of the algorithm yourself
 
-//        #ifdef MAIN
-//        backtrack(source, target);
-//        #endif // MAIN
+        if (distance_[0][target] != INFINITY) {
+            return backtrack(source, target);
+        }
         return -1;
     }
 };
@@ -268,10 +297,10 @@ void processFile(FILE *file, Bidijkstra& bidij) {
     }
 }
 
-//#ifdef MAIN
+#ifdef MAIN
 int main() {
     Bidijkstra bidij = readFromFile(stdin);
     processFile(stdin, bidij);
     //bidij.saveToFile("saved.txt");
 }
-//#endif // MAIN
+#endif // MAIN
