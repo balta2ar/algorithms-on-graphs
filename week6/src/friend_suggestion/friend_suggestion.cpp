@@ -221,7 +221,7 @@ public:
         //workset_.push_back(u);
         workset_.insert(u);
         #ifdef MAIN
-        //cerr << u << endl;
+        cerr << u << endl;
         #endif // MAIN
     }
 
@@ -370,8 +370,8 @@ Bidijkstra generateStraight(int numVertices, int edgeCost) {
     for (int i = 0; i < numVertices - 1; ++i) {
         adj[0][i].push_back(i+1);
         cost[0][i].push_back(edgeCost);
-        adj[1][i].push_back(i+1);
-        cost[1][i].push_back(edgeCost);
+        adj[1][i+1].push_back(i);
+        cost[1][i+1].push_back(edgeCost);
     }
     Bidijkstra result = Bidijkstra(numVertices, numVertices - 1, adj, cost);
     //result.saveToFile("dummy.txt");
@@ -388,8 +388,8 @@ Bidijkstra generateDual(int numVertices1, int edgeCost1, int numVertices2, int e
     auto add = [&adj, &cost](int from, int to, int edgeCost) {
         adj[0][from].push_back(to);
         cost[0][from].push_back(edgeCost);
-        adj[1][from].push_back(to);
-        cost[1][from].push_back(edgeCost);
+        adj[1][to].push_back(from);
+        cost[1][to].push_back(edgeCost);
     };
 
     for (int i = 0; i < numVertices1 - 1; ++i) {

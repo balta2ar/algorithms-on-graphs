@@ -54,7 +54,7 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     edges = read_graph(input_graph)
     coords = read_coords(coordinates)
 
-    WIDTH, HEIGHT = 20000, 20000
+    WIDTH, HEIGHT = 2000, 2000
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
     ctx = cairo.Context(surface)
 

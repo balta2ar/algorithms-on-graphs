@@ -4,6 +4,7 @@
 #include <queue>
 #include <limits>
 #include <string>
+#include <unordered_set>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ typedef vector<priority_queue<pair<Len, int>,
                               vector<pair<Len, int>>,
                               greater<pair<Len, int>>>> Queue;
 
-const Len INFINITY = numeric_limits<Len>::max() / 4;
+const Len VERY_LARGE = numeric_limits<Len>::max() / 4LL;
 
 class Bidijkstra {
     int n_;
@@ -31,10 +32,10 @@ class Bidijkstra {
     // and distance_[1] stores distances for the backward search.
     vector<vector<Len>> distance_;
     // Stores all the nodes visited either by forward or backward search.
-    vector<int> workset_;
+    unordered_set<int> workset_;
     // Stores a flag for each node which is True iff the node was visited
     // either by forward or backward search.
-    vector<bool> visited_;
+    vector<vector<bool>> visited_;
 
     vector<vector<int>> parent_;
 
