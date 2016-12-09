@@ -1,5 +1,5 @@
 CC = g++
-CXXFLAGS = -rdynamic -g -ggdb -O0 -pipe -std=c++14
+CXXFLAGS = -rdynamic -g -ggdb -O0 -pipe -std=c++14 -Wall
 LIBS = -lm -lSegFault
 INCLUDES = -I.
 WORKDIR =
