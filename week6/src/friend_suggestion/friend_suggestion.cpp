@@ -9,6 +9,7 @@
 #include <fstream>
 #include <algorithm>
 #include <unordered_set>
+#include <ostream>
 
 using namespace std;
 
@@ -364,25 +365,24 @@ Bidijkstra generateDual(int numVertices1, int edgeCost1, int numVertices2, int e
 //    temp.saveToFile("/dev/null");
 //}
 
-Bidijkstra readFromFile(FILE *file) {
+Bidijkstra* readFromFile(FILE *file) {
     int n, m;
     fscanf(file, "%d%d", &n, &m);
     Adj adj(2, vector<vector<int>>(n));
     Adj cost(2, vector<vector<int>>(n));
-    for (int i=0; i<m; ++i) {
-        int u, v;
-        Len c;
-        fscanf(file, "%d%d%lld", &u, &v, &c);
+    for (int i=0; i<m; i++) {
+        int u, v, c;
+        fscanf(file, "%d%d%d", &u, &v, &c);
         adj[0][u-1].push_back(v-1);
         cost[0][u-1].push_back(c);
         adj[1][v-1].push_back(u-1);
         cost[1][v-1].push_back(c);
     }
-    return Bidijkstra(n, m, adj, cost);
+    return new Bidijkstra(n, m, adj, cost);
 }
 
 
-void processFile(FILE *file, Bidijkstra& searcher) {
+void processFile(FILE *file, Bidijkstra& searcher, ostream& output) {
     int t;
     fscanf(file, "%d", &t);
     for (int i=0; i<t; ++i) {
@@ -391,7 +391,8 @@ void processFile(FILE *file, Bidijkstra& searcher) {
         //printf("incoming query #%d, (%d,%d)\n", i, u-1, v-1);
         //int result = bidij.query(u-1, v-1);
         int result = searcher.query(u-1, v-1);
-        printf("%d\n", result);
+        output << result << endl;
+        //printf("%d\n", result);
         // printf("query result #%d (%d,%d), %lld\n", i, u-1, v-1, result);
         // printf("------------------\n");
     }
@@ -415,10 +416,11 @@ int main(int argc, const char **argv) {
     }
     //cout << algorithm << endl;
 
-    Bidijkstra bidij = readFromFile(stdin);
-    bidij.setAlgorithm(algorithm);
-    processFile(stdin, bidij);
+    Bidijkstra *bidij = readFromFile(stdin);
+    bidij->setAlgorithm(algorithm);
+    processFile(stdin, *bidij, cout);
     //bidij.saveToFile("saved.txt");
+    delete bidij;
 }
 #elif MAIN
 

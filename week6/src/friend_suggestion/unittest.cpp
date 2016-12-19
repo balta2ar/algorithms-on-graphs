@@ -1,6 +1,8 @@
 #include "friend_suggestion.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <glob.h>
 
 #ifdef TEST
@@ -52,20 +54,54 @@ TEST_CASE("Unconnected", "[unconnected]") {
     }
 }
 
-TEST_CASE("Manual", "[manual]") {
-    //REQUIRE(1 == 1);
-    SECTION("manual") {
-        //Bidijkstra generated = generateUnconnected(10);
-        glob_t glob_result;
-        glob("tests/*.in", GLOB_TILDE, NULL, &glob_result);
 
-        for (unsigned int i = 0; i < glob_result.gl_pathc; ++i) {
-            cout << "TEST: " << glob_result.gl_pathv[i] << endl;
-            FILE *file = fopen(glob_result.gl_pathv[i], "r");
-            Bidijkstra graph = readFromFile(file);
-            processFile(file, graph);
-            fclose(file);
-        }
+string slurp(string filename) {
+    ifstream expected_file(filename);
+    stringstream expected;
+    expected << expected_file.rdbuf();
+    return expected.str();
+}
+
+
+string runAndReturn(string inFilename) {
+    FILE *file = fopen(inFilename.c_str(), "rt");
+    Bidijkstra* graph = readFromFile(file);
+    ostringstream output;
+    processFile(file, *graph, output);
+    delete graph;
+    fclose(file);
+    return output.str();
+}
+
+
+TEST_CASE("Manual", "[manual]") {
+    SECTION("manual") {
+        vector<vector<string>> tests = {
+            {"./test_small/small1.in", "./test_small/small1.out"},
+            {"./test_small/small2.in", "./test_small/small2.out"},
+            {"./test_small/small3.in", "./test_small/small3.out"},
+            {"./test_small/case2-1.in", "./test_small/case2-1.out"},
+            {"./test_small/case2-2.in", "./test_small/case2-2.out"},
+            {"./test_small/case2-3.in", "./test_small/case2-3.out"},
+            {"./test_small/case2.in", "./test_small/case2.out"}
+        };
+
+       for (auto test : tests) {
+           cout << "TEST IN " << test[0] << " OUT " << test[1] << endl;
+           string actual = runAndReturn(test[0]);
+           REQUIRE(slurp(test[1]) == actual);
+       }
+
+        // glob_t glob_result;
+        // glob("tests#<{(|.in", GLOB_TILDE, NULL, &glob_result);
+        //
+        // for (unsigned int i = 0; i < glob_result.gl_pathc; ++i) {
+        //     cout << "TEST: " << glob_result.gl_pathv[i] << endl;
+        //     FILE *file = fopen(glob_result.gl_pathv[i], "r");
+        //     Bidijkstra graph = readFromFile(file);
+        //     processFile(file, graph);
+        //     fclose(file);
+        // }
 
 //        for (auto &p : fs::directory_iterator("tests")) {
 //            cout << p << endl;

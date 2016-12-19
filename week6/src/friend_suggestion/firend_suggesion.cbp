@@ -2,13 +2,13 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="friend_suggesion" />
+		<Option title="friend_suggestion" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Option extended_obj_names="1" />
 		<Build>
 			<Target title="DMain">
-				<Option output="bin/DMain/friend_suggesion" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/DMain/friend_suggestion" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/DMain/" />
 				<Option type="1" />
 				<Option compiler="gcc" />

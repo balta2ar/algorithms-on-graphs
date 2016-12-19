@@ -5,6 +5,7 @@
 #include <limits>
 #include <string>
 #include <unordered_set>
+#include <ostream>
 
 using namespace std;
 
@@ -53,5 +54,5 @@ Bidijkstra generateDual(int numVertices1, int edgeCost1, int numVertices2, int e
 Bidijkstra generateUnconnected(int numVertices);
 
 
-Bidijkstra readFromFile(FILE *file);
-void processFile(FILE *file, Bidijkstra& bidij);
+Bidijkstra *readFromFile(FILE *file);
+void processFile(FILE *file, Bidijkstra& bidij, ostream& output);
