@@ -54,7 +54,7 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     edges = read_graph(input_graph)
     coords = read_coords(coordinates)
 
-    WIDTH, HEIGHT = 2000, 2000
+    WIDTH, HEIGHT = 20000, 20000
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
     ctx = cairo.Context(surface)
 
@@ -126,10 +126,11 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output):
     print('')
 
     i = 0
+    # print('Writing to %s' % output)
+    # surface.write_to_png(output)
+
     #surface.write_to_png(output)
-    print('Writing to %s' % output)
     #surface.write_to_png('frames/%06d.png' % i)
-    surface.write_to_png(output)
     #return
 
     visited = read_visited(visited_filename)

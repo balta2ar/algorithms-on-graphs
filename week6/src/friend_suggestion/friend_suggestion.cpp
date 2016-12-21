@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <ostream>
+#include <cmath>
 
 using namespace std;
 
@@ -18,7 +19,8 @@ using namespace std;
 typedef vector<vector<vector<int>>> Adj;
 
 // Distances can grow out of int type
-typedef long long Len;
+//typedef long long Len;
+typedef double Len;
 
 // Vector of two priority queues - for forward and backward searches.
 // Each priority queue stores the closest unprocessed node in its head.
@@ -66,6 +68,7 @@ void log_to_file(string filename, T value) {
 
 
 class Bidijkstra {
+protected:
     // Number of nodes
     int n_;
     int m_;
@@ -174,6 +177,8 @@ public:
             return query_bidirectional(source, target);
         } else if (algorithm_ == "onedijkstra") {
             return query_onedirectional(source, target);
+        } else if (algorithm_ == "astar") {
+            return query_bidirectional(source, target);
         } else {
             cout << "Unknown algorithm \"" << algorithm_ << "\"" << endl;
             return -1;
@@ -190,17 +195,41 @@ public:
         return node.second;
     }
 
-    void process(Queue& front, int side, int u) {
+    virtual Len potential(int u, int v, int v_index, int source, int target, int side) {
+        //return 0;
+        return cost_[side][u][v_index];
+        //return distance_[side][u] + cost_[side][u][v_index];
+    }
+
+    void process(Queue& front, int side, int u, int source, int target) {
         auto neighbors = adj_[side][u];
         for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
             int v = neighbors[v_index];
-            Len alt = distance_[side][u] + cost_[side][u][v_index];
+            //Len alt = potential(u, v, v_index, source, target, side);
+            Len orig_dist = distance_[side][u] + cost_[side][u][v_index];
+            Len normal_dist = distance_[side][u]; // + cost_[side][u][v_index];
+            //Len edge_len = cost_[side][u][v_index];
+            Len extra_estimate = potential(u, v, v_index, source, target, side);
+            //Len alt = edge_len + extra_estimate;
+            Len alt = normal_dist + extra_estimate;
+
+            // cout << "process u v " << u << " " << v
+            //     << " dist alt " << distance_[side][v] << " " << alt
+            //     << endl;
 
             if (alt < distance_[side][v]) {
-                distance_[side][v] = alt;
+                //distance_[side][v] = alt;
+                distance_[side][v] = orig_dist;
                 parent_[side][v] = u;
 
+                // cout << "alt < dist: side " << side
+                //     << " u v " << u << " " << v
+                //     << " alt " << alt
+                //     << " orig_dist " << orig_dist
+                //     << endl;
+
                 front[side].push({alt, v});
+                //front[side].push({normal_dist, v});
                 workset_.insert(v);
             }
         }
@@ -215,7 +244,7 @@ public:
         if (u == -1) {
             return false;
         }
-        process(front, side, u);
+        process(front, side, u, source, target);
 
         int other_side = 1 - side;
         if (visited_[other_side][u]) {
@@ -309,6 +338,72 @@ public:
     }
 };
 
+
+class AStar : public Bidijkstra {
+protected:
+    // Coordinates of the nodes
+    vector<pair<Len,Len>> xy_;
+
+public:
+    AStar(int n, int m, Adj adj, Adj cost, vector<pair<Len,Len>> xy)
+        : Bidijkstra(n, n, adj, cost), xy_(xy)
+    {
+        workset_.reserve(n);
+    }
+
+    double dist(int u, int v) {
+        //return sqrt(xy_[u][0] * xy_[u][0]);
+        // return sqrt(
+        //     pow(xy_[u].first - xy_[v].first, 2) +
+        //     pow(xy_[u].second - xy_[v].second, 2)
+        // );
+        double dx = xy_[u].first - xy_[v].first;
+        double dy = xy_[u].second - xy_[v].second;
+        return sqrt(dx * dx + dy * dy);
+    }
+
+    double p_f(int u, int source, int target, int side) {
+        double result = (dist(u, target) - dist(source, u)) / 2.0;
+        result *= ((side == 0) ? 1.0 : -1.0);
+        return result;
+        //return -1.0 * side * result;
+    }
+
+    Len potential(int u, int v, int v_index, int source, int target, int side) {
+        // throw runtime_error("ASTAR potential");
+        //return distance_[side][u] + cost_[side][u][v_index];
+
+        //double result = 0;
+        double result = cost_[side][u][v_index];
+
+        //result += distance_[side][u] + cost_[side][u][v_index];
+        //result += cost_[side][u][v_index];
+
+        //result += (dist(v, target) - dist(source, v)) / 2;
+        //result = -1 * side * result;
+
+        double p_front_u = p_f(u, source, target, side);
+        double p_front_v = p_f(v, source, target, side);
+
+        result += - p_front_u + p_front_v;
+
+        // if (side == 0) {
+        //     // forward
+        //     result += - p_f(u, source, target, 0) + p_f(v, source, target, 0);
+        // } else {
+        //     // reverse
+        //     result += - p_f(v, source, target, 1) + p_f(u, source, target, 1);
+        // }
+
+        Len l = (Len) result;
+        // cout << "POTENTIAL u v " << u << " " << v << " s t "
+        //     << source << " " << target << " side " << side
+        //     << " = " << result << " | " << l << endl;
+        return l;
+    }
+};
+
+
 Bidijkstra generateUnconnected(int numVertices) {
     Adj adj(2, vector<vector<int>>(numVertices));
     Adj cost(2, vector<vector<int>>(numVertices));
@@ -382,6 +477,39 @@ Bidijkstra* readFromFile(FILE *file) {
 }
 
 
+Bidijkstra* readFromFileWithDistance(FILE *file) {
+    int n, m;
+    fscanf(file, "%d%d", &n, &m);
+    vector<pair<Len,Len>> xy(n);
+    for (int i=0; i<n; ++i){
+        int a, b;
+        fscanf(file, "%d%d", &a, &b);
+        xy[i] = make_pair(a,b);
+    }
+    Adj adj(2, vector<vector<int>>(n));
+    Adj cost(2, vector<vector<int>>(n));
+    for (int i=0; i<m; ++i) {
+        int u, v, c;
+        fscanf(file, "%d%d%d", &u, &v, &c);
+        adj[0][u-1].push_back(v-1);
+        cost[0][u-1].push_back(c);
+        adj[1][v-1].push_back(u-1);
+        cost[1][v-1].push_back(c);
+    }
+
+    //AStar astar(n, adj, cost, xy);
+    return new AStar(n, m, adj, cost, xy);
+
+    // int t;
+    // scanf("%d", &t);
+    // for (int i=0; i<t; ++i) {
+    //     int u, v;
+    //     scanf("%d%d", &u, &v);
+    //     printf("%lld\n", astar.query(u-1, v-1));
+    // }
+}
+
+
 void processFile(FILE *file, Bidijkstra& searcher, ostream& output) {
     int t;
     fscanf(file, "%d", &t);
@@ -412,18 +540,33 @@ int main(int argc, const char **argv) {
     visited_filename = parser.retrieve<string>("visited");
     string algorithm = parser.retrieve<string>("algorithm");
     if (algorithm.empty()) {
-        algorithm = "bidijkstra";
+        //algorithm = "bidijkstra";
+        algorithm = "astar";
     }
     //cout << algorithm << endl;
 
-    Bidijkstra *bidij = readFromFile(stdin);
+    //Bidijkstra *bidij = readFromFile(stdin);
+    Bidijkstra *bidij = nullptr;
+    if (algorithm == "astar") {
+        bidij = readFromFileWithDistance(stdin);
+    } else {
+        bidij = readFromFile(stdin);
+    }
     bidij->setAlgorithm(algorithm);
     processFile(stdin, *bidij, cout);
     //bidij.saveToFile("saved.txt");
     delete bidij;
 }
-#elif MAIN
+#elif TEST
 
-#else // TEST
+#else // nothing
+
+int main() {
+    Bidijkstra *bidij = readFromFileWithDistance(stdin);
+    bidij->setAlgorithm("astar");
+    processFile(stdin, *bidij, cout);
+    delete bidij;
+}
+
 
 #endif // MAIN, TEST

@@ -47,6 +47,8 @@ public:
     void visit(Queue& front, int side, int v, Len dist);
     Len backtrack(int source, int target);
     Len query(int source, int target);
+
+    virtual Len potential(int u, int v, int v_index, int source, int target, int side);
 };
 
 Bidijkstra generateStraight(int numVertices, int edgeCost);

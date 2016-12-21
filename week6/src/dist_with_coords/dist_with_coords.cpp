@@ -11,9 +11,11 @@ using namespace std;
 // See the explanations of these typedefs and constants in the starter for friend_suggestion
 typedef vector<vector<vector<int>>> Adj;
 typedef long long Len;
-typedef vector<priority_queue<pair<Len, int>,vector<pair<Len,int>>,greater<pair<Len,int>>>> Queue;
+typedef vector<priority_queue<pair<Len, int>,
+               vector<pair<Len,int>>,
+               greater<pair<Len,int>>>> Queue;
 
-const Len INFINITY = numeric_limits<Len>::max() / 4;
+const Len VERY_LARGE = numeric_limits<Len>::max() / 4;
 
 class AStar {
     // See the descriptions of these fields in the starter for friend_suggestion
@@ -28,14 +30,19 @@ class AStar {
 
 public:
     AStar(int n, Adj adj, Adj cost, std::vector<std::pair<Len,Len>> xy)
-        : n_(n), adj_(adj), cost_(cost), distance_(2, vector<Len>(n_, INFINITY)), visited_(n), xy_(xy)
+        : n_(n),
+        adj_(adj),
+        cost_(cost),
+        distance_(2, vector<Len>(n_, VERY_LARGE)),
+        visited_(n),
+        xy_(xy)
     { workset_.reserve(n); }
 
     // See the description of this method in the starter for friend_suggestion
     void clear() {
         for (int i = 0; i < workset_.size(); ++i) {
             int v = workset_[i];
-            distance_[0][v] = distance_[1][v] = INFINITY;
+            distance_[0][v] = distance_[1][v] = VERY_LARGE;
             visited_[v] = false;
         }
         workset_.clear();
