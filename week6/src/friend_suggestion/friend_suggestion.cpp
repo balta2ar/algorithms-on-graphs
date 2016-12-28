@@ -206,29 +206,34 @@ public:
         for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
             int v = neighbors[v_index];
             //Len alt = potential(u, v, v_index, source, target, side);
-            Len orig_dist = distance_[side][u] + cost_[side][u][v_index];
+            Len actual_dist = distance_[side][u] + cost_[side][u][v_index];
             Len normal_dist = distance_[side][u]; // + cost_[side][u][v_index];
             //Len edge_len = cost_[side][u][v_index];
             Len extra_estimate = potential(u, v, v_index, source, target, side);
             //Len alt = edge_len + extra_estimate;
-            Len alt = normal_dist + extra_estimate;
+            //Len alt = normal_dist + extra_estimate;
+            Len alt = actual_dist + extra_estimate;
 
             // cout << "process u v " << u << " " << v
             //     << " dist alt " << distance_[side][v] << " " << alt
             //     << endl;
 
-            if (alt < distance_[side][v]) {
+            //if (alt < distance_[side][v]) {
+            if (actual_dist < distance_[side][v]) {
                 //distance_[side][v] = alt;
-                distance_[side][v] = orig_dist;
+                distance_[side][v] = actual_dist;
                 parent_[side][v] = u;
 
                 // cout << "alt < dist: side " << side
                 //     << " u v " << u << " " << v
-                //     << " alt " << alt
-                //     << " orig_dist " << orig_dist
+                //     << " alt " << fixed << alt
+                //     << " actual_dist " << actual_dist
+                //     << " extra_estimate " << extra_estimate
+                //     << " front size " << front[side].size()
                 //     << endl;
 
                 front[side].push({alt, v});
+                //front[side].push({alt, v});
                 //front[side].push({normal_dist, v});
                 workset_.insert(v);
             }
@@ -244,6 +249,7 @@ public:
         if (u == -1) {
             return false;
         }
+        //print_coords();
         process(front, side, u, source, target);
 
         int other_side = 1 - side;
@@ -284,10 +290,16 @@ public:
         return dist;
     }
 
+    virtual void print_coords(int source, int target) {
+    }
+
     Len query_bidirectional(int source, int target) {
         clear();
         Queue front(2);
         distance_[0][source] = distance_[1][target] = 0;
+
+        //print_coords(source, target);
+        //return -1;
 
         front[0].push({0, source});
         front[1].push({0, target});
@@ -346,9 +358,23 @@ protected:
 
 public:
     AStar(int n, int m, Adj adj, Adj cost, vector<pair<Len,Len>> xy)
-        : Bidijkstra(n, n, adj, cost), xy_(xy)
+        : Bidijkstra(n, m, adj, cost), xy_(xy)
     {
         workset_.reserve(n);
+    }
+
+    void print_coords(int source, int target) {
+        for (int i = 0; i < n_; ++i) {
+            Len pf_sum = p_f(i, source, target, 0); // + p_f(i, source, target, 1);
+            cout << "pf_sum " << pf_sum << " i source target " << i << " "
+                << source << " " << target << endl;
+        }
+        // for (pair<Len, Len> &p : xy_) {
+        //     cout << ((long long) p.first) << " " << ((long long) p.second) << endl;
+        // }
+        // int u = 1353;
+        // cout << "1353 | coords " << fixed
+        //     << xy_[u].first << "," << xy_[u].second << endl;
     }
 
     double dist(int u, int v) {
@@ -363,6 +389,12 @@ public:
     }
 
     double p_f(int u, int source, int target, int side) {
+        // if (side == 0) {
+        //     return 0.5 * (dist(u, target) - dist(source, u)) + 0.5 * dist(source, target);
+        // } else {
+        //     return 0.5 * (dist(source, u) - dist(u, target)) + 0.5 * dist(source, target);
+        // }
+
         double result = (dist(u, target) - dist(source, u)) / 2.0;
         result *= ((side == 0) ? 1.0 : -1.0);
         return result;
@@ -373,8 +405,12 @@ public:
         // throw runtime_error("ASTAR potential");
         //return distance_[side][u] + cost_[side][u][v_index];
 
-        //double result = 0;
-        double result = cost_[side][u][v_index];
+        //double result = cost_[side][u][v_index];
+        double edge_cost = cost_[side][u][v_index];
+        //return (Len) edge_cost;
+
+        //double result = edge_cost;
+        double result = 0;
 
         //result += distance_[side][u] + cost_[side][u][v_index];
         //result += cost_[side][u][v_index];
@@ -384,8 +420,43 @@ public:
 
         double p_front_u = p_f(u, source, target, side);
         double p_front_v = p_f(v, source, target, side);
+        double delta = p_front_v - p_front_u;
 
-        result += - p_front_u + p_front_v;
+        //result += - p_front_u + p_front_v;
+        result += delta;
+
+        // int test_u = 1353;
+        // cout << "1353 | u v " << u << " " << v
+        //     << " potential coords " << fixed
+        //     << xy_[test_u].first << "," << xy_[test_u].second << endl;
+
+        // if (result < 0) {
+        //     cout << "result < 0 " << delta
+        //         << " u v " << u << " " << v
+        //         << " edge_cost " << edge_cost
+        //         << " dist " << dist(u, v)
+        //         << " result " << result
+        //         << " coords " << fixed
+        //         << xy_[u].first << "," << xy_[u].second << " "
+        //         << xy_[v].first << "," << xy_[v].second
+        //         << endl;
+        // }
+
+        if (edge_cost < dist(u, v)) {
+            // cout << "ERROR edge_cost < dist" << endl;
+
+            // cout << "(e<d) result < 0 " << delta
+            //     << " u v " << u << " " << v
+            //     << " edge_cost " << edge_cost
+            //     << " dist " << dist(u, v)
+            //     << " result " << result
+            //     << " coords " << fixed
+            //     << xy_[u].first << "," << xy_[u].second << " "
+            //     << xy_[v].first << "," << xy_[v].second
+            //     << endl;
+
+            // throw runtime_error("ERROR dist > edge_cost");
+        }
 
         // if (side == 0) {
         //     // forward
@@ -485,16 +556,25 @@ Bidijkstra* readFromFileWithDistance(FILE *file) {
         int a, b;
         fscanf(file, "%d%d", &a, &b);
         xy[i] = make_pair(a,b);
+        // if (1353 == i || 1355 == i) {
+        //     cout << fixed << "coord i " << i << " x y "
+        //         << a << " " << b << endl;
+        // }
     }
     Adj adj(2, vector<vector<int>>(n));
     Adj cost(2, vector<vector<int>>(n));
     for (int i=0; i<m; ++i) {
         int u, v, c;
         fscanf(file, "%d%d%d", &u, &v, &c);
+        c = c * 1;
         adj[0][u-1].push_back(v-1);
         cost[0][u-1].push_back(c);
         adj[1][v-1].push_back(u-1);
         cost[1][v-1].push_back(c);
+        // if (u == 1354 || u == 1356) {
+        //     cout << "edge i " << i
+        //         << " u v (+1) " << u << " " << v << " cost " << c << endl;
+        // }
     }
 
     //AStar astar(n, adj, cost, xy);
