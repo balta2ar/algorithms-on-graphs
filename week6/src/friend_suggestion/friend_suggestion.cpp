@@ -19,8 +19,8 @@ using namespace std;
 typedef vector<vector<vector<int>>> Adj;
 
 // Distances can grow out of int type
-//typedef long long Len;
-typedef double Len;
+typedef long long Len;
+//typedef double Len;
 
 // Vector of two priority queues - for forward and backward searches.
 // Each priority queue stores the closest unprocessed node in its head.
@@ -196,8 +196,8 @@ public:
     }
 
     virtual Len potential(int u, int v, int v_index, int source, int target, int side) {
-        //return 0;
-        return cost_[side][u][v_index];
+        return 0;
+        //return cost_[side][u][v_index];
         //return distance_[side][u] + cost_[side][u][v_index];
     }
 
@@ -205,36 +205,16 @@ public:
         auto neighbors = adj_[side][u];
         for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
             int v = neighbors[v_index];
-            //Len alt = potential(u, v, v_index, source, target, side);
             Len actual_dist = distance_[side][u] + cost_[side][u][v_index];
-            Len normal_dist = distance_[side][u]; // + cost_[side][u][v_index];
-            //Len edge_len = cost_[side][u][v_index];
-            Len extra_estimate = potential(u, v, v_index, source, target, side);
-            //Len alt = edge_len + extra_estimate;
-            //Len alt = normal_dist + extra_estimate;
-            Len alt = actual_dist + extra_estimate;
 
-            // cout << "process u v " << u << " " << v
-            //     << " dist alt " << distance_[side][v] << " " << alt
-            //     << endl;
-
-            //if (alt < distance_[side][v]) {
             if (actual_dist < distance_[side][v]) {
-                //distance_[side][v] = alt;
                 distance_[side][v] = actual_dist;
                 parent_[side][v] = u;
 
-                // cout << "alt < dist: side " << side
-                //     << " u v " << u << " " << v
-                //     << " alt " << fixed << alt
-                //     << " actual_dist " << actual_dist
-                //     << " extra_estimate " << extra_estimate
-                //     << " front size " << front[side].size()
-                //     << endl;
+                Len extra_estimate = potential(u, v, v_index, source, target, side);
+                Len alt = actual_dist + extra_estimate;
 
                 front[side].push({alt, v});
-                //front[side].push({alt, v});
-                //front[side].push({normal_dist, v});
                 workset_.insert(v);
             }
         }
@@ -286,6 +266,11 @@ public:
             last = parent_[1][last];
             path.push_back(last);
         }
+
+        // for (auto& item : path) {
+        //     cout << item << " ";
+        // }
+        // cout << endl;
 
         return dist;
     }
@@ -398,78 +383,16 @@ public:
         double result = (dist(u, target) - dist(source, u)) / 2.0;
         result *= ((side == 0) ? 1.0 : -1.0);
         return result;
-        //return -1.0 * side * result;
     }
 
     Len potential(int u, int v, int v_index, int source, int target, int side) {
-        // throw runtime_error("ASTAR potential");
-        //return distance_[side][u] + cost_[side][u][v_index];
-
-        //double result = cost_[side][u][v_index];
-        double edge_cost = cost_[side][u][v_index];
-        //return (Len) edge_cost;
-
-        //double result = edge_cost;
         double result = 0;
-
-        //result += distance_[side][u] + cost_[side][u][v_index];
-        //result += cost_[side][u][v_index];
-
-        //result += (dist(v, target) - dist(source, v)) / 2;
-        //result = -1 * side * result;
-
         double p_front_u = p_f(u, source, target, side);
         double p_front_v = p_f(v, source, target, side);
         double delta = p_front_v - p_front_u;
 
-        //result += - p_front_u + p_front_v;
         result += delta;
-
-        // int test_u = 1353;
-        // cout << "1353 | u v " << u << " " << v
-        //     << " potential coords " << fixed
-        //     << xy_[test_u].first << "," << xy_[test_u].second << endl;
-
-        // if (result < 0) {
-        //     cout << "result < 0 " << delta
-        //         << " u v " << u << " " << v
-        //         << " edge_cost " << edge_cost
-        //         << " dist " << dist(u, v)
-        //         << " result " << result
-        //         << " coords " << fixed
-        //         << xy_[u].first << "," << xy_[u].second << " "
-        //         << xy_[v].first << "," << xy_[v].second
-        //         << endl;
-        // }
-
-        if (edge_cost < dist(u, v)) {
-            // cout << "ERROR edge_cost < dist" << endl;
-
-            // cout << "(e<d) result < 0 " << delta
-            //     << " u v " << u << " " << v
-            //     << " edge_cost " << edge_cost
-            //     << " dist " << dist(u, v)
-            //     << " result " << result
-            //     << " coords " << fixed
-            //     << xy_[u].first << "," << xy_[u].second << " "
-            //     << xy_[v].first << "," << xy_[v].second
-            //     << endl;
-
-            // throw runtime_error("ERROR dist > edge_cost");
-        }
-
-        // if (side == 0) {
-        //     // forward
-        //     result += - p_f(u, source, target, 0) + p_f(v, source, target, 0);
-        // } else {
-        //     // reverse
-        //     result += - p_f(v, source, target, 1) + p_f(u, source, target, 1);
-        // }
-
         Len l = (Len) result;
-        // cout << "POTENTIAL u v " << u << " " << v << " s t "
-        //     << source << " " << target << " side " << side
-        //     << " = " << result << " | " << l << endl;
         return l;
     }
 };

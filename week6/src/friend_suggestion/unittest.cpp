@@ -63,9 +63,9 @@ string slurp(string filename) {
 }
 
 
-string runAndReturn(string inFilename) {
+string runAndReturn(auto reader, string inFilename) {
     FILE *file = fopen(inFilename.c_str(), "rt");
-    Bidijkstra* graph = readFromFile(file);
+    Bidijkstra* graph = reader(file);
     ostringstream output;
     processFile(file, *graph, output);
     delete graph;
@@ -88,7 +88,7 @@ TEST_CASE("Manual", "[manual]") {
 
        for (auto test : tests) {
            cout << "TEST IN " << test[0] << " OUT " << test[1] << endl;
-           string actual = runAndReturn(test[0]);
+           string actual = runAndReturn(readFromFile, test[0]);
            REQUIRE(slurp(test[1]) == actual);
        }
 
@@ -107,6 +107,40 @@ TEST_CASE("Manual", "[manual]") {
 //            cout << p << endl;
 //        }
 
+    }
+}
+
+string toHex(const string& s, bool upper_case /* = true */)
+{
+    ostringstream ret;
+
+    for (string::size_type i = 0; i < s.length(); ++i)
+        ret << std::hex << std::setfill('0') << std::setw(2) << (upper_case ? std::uppercase : std::nouppercase) << (int)s[i];
+
+    return ret.str();
+}
+
+TEST_CASE("AStar", "[astar]") {
+    SECTION("astar") {
+        vector<vector<string>> tests = {
+            {"./test_astar/sample1.in", "./test_astar/sample1.out"},
+            {"./test_astar/sample2.in", "./test_astar/sample2.out"},
+            {"./test_astar/case1.in", "./test_astar/case1.out"},
+            {"./test_astar/case2.in", "./test_astar/case2.out"},
+            {"./test_astar/case3.in", "./test_astar/case3.out"},
+            {"./test_astar/case3.limited.in", "./test_astar/case3.limited.out"},
+            {"./test_astar/gen10.in", "./test_astar/gen10.out"},
+            {"./test_astar/gen100.in", "./test_astar/gen100.out"},
+            {"./test_astar/gen1000.in", "./test_astar/gen1000.out"},
+        };
+
+       for (auto test : tests) {
+           cout << "TEST IN " << test[0] << " OUT " << test[1] << endl;
+           string actual = runAndReturn(readFromFileWithDistance, test[0]);
+           // cout << "A>" << toHex(actual, true) << "<" << endl;
+           // cout << "E>" << toHex(slurp(test[1]), true) << "<" << endl;
+           REQUIRE(slurp(test[1]) == actual);
+       }
     }
 }
 

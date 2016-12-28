@@ -58,4 +58,5 @@ Bidijkstra generateUnconnected(int numVertices);
 
 
 Bidijkstra *readFromFile(FILE *file);
+Bidijkstra* readFromFileWithDistance(FILE *file);
 void processFile(FILE *file, Bidijkstra& bidij, ostream& output);
