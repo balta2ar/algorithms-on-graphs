@@ -49,7 +49,8 @@ public:
     Len query(int source, int target);
 
     virtual Len potential(int u, int v, int v_index, int source, int target, int side);
-    virtual void print_cords(int source, int target);
+    virtual bool can_stop(Queue& front, int side, int u, int source, int target);
+    virtual void print_coords(int source, int target);
 };
 
 Bidijkstra generateStraight(int numVertices, int edgeCost);

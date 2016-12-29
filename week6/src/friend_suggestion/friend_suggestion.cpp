@@ -71,7 +71,10 @@ class Bidijkstra {
 protected:
     // Number of nodes
     int n_;
+
+    // Number of edges
     int m_;
+
     // Graph adj_[0] and cost_[0] correspond to the initial graph,
     // adj_[1] and cost_[1] correspond to the reversed graph.
     // Graphs are stored as vectors of adjacency lists corresponding
@@ -80,19 +83,29 @@ protected:
     // edge costs are stored in cost_.
     Adj adj_;
     Adj cost_;
+
     // distance_[0] stores distances for the forward search,
     // and distance_[1] stores distances for the backward search.
     vector<vector<Len>> distance_;
+
     // Stores all the nodes visited either by forward or backward search.
     //vector<int> workset_;
     unordered_set<int> workset_;
+
     // Stores a flag for each node which is True iff the node was visited
     // either by forward or backward search.
     //vector<bool> visited_;
+    // You may not need to store visited flag for both directions depending
+    // on your stopping condition.
     vector<vector<bool>> visited_;
 
+    // Stores parent vertice id for each vertice
     vector<vector<int>> parent_;
 
+    // Best path len found so far (called mu in lecture slides)
+    Len best_path_len_;
+
+    // Algorithm to run
     string algorithm_ = "bidijkstra";
 
 public:
@@ -104,7 +117,8 @@ public:
           distance_(2, vector<Len>(n, VERY_LARGE)),
           visited_(2, vector<bool>(n, false)),
           //visited_(n),
-          parent_(2, vector<int>(n, -1))
+          parent_(2, vector<int>(n, -1)),
+          best_path_len_(VERY_LARGE)
     {
         workset_.reserve(n);
     }
@@ -147,6 +161,7 @@ public:
         }
         workset_.clear();
         workset_.reserve(n_);
+        best_path_len_ = VERY_LARGE;
     }
 
     Len backtrack(int source, int target) {
@@ -202,11 +217,13 @@ public:
     }
 
     void process(Queue& front, int side, int u, int source, int target) {
+        // process all u's neighbors
         auto neighbors = adj_[side][u];
         for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
             int v = neighbors[v_index];
             Len actual_dist = distance_[side][u] + cost_[side][u][v_index];
 
+            // is this a better path to v?
             if (actual_dist < distance_[side][v]) {
                 distance_[side][v] = actual_dist;
                 parent_[side][v] = u;
@@ -216,6 +233,18 @@ public:
 
                 front[side].push({alt, v});
                 workset_.insert(v);
+            }
+
+            // update best_path_len_ (mu) if necessary
+            int other_side = 1 - side;
+            //if (visited_[other_side][v]) {
+            if (distance_[other_side][v] < VERY_LARGE) {
+                Len new_best_path_len = cost_[side][u][v_index] +
+                    distance_[side][u] + distance_[other_side][v];
+
+                if (new_best_path_len < best_path_len_) {
+                    best_path_len_ = new_best_path_len;
+                }
             }
         }
 
@@ -232,12 +261,16 @@ public:
         //print_coords();
         process(front, side, u, source, target);
 
-        int other_side = 1 - side;
-        if (visited_[other_side][u]) {
+        if (can_stop(front, side, u, source, target)) {
             dist = shortest_path(source, target);
             return true;
         }
         return false;
+    }
+
+    virtual bool can_stop(Queue& front, int side, int u, int source, int target) {
+        int other_side = 1 - side;
+        return visited_[other_side][u];
     }
 
     int shortest_path(int source, int target) {
@@ -279,6 +312,10 @@ public:
     }
 
     Len query_bidirectional(int source, int target) {
+        if (source == target) {
+            return 0;
+        }
+
         clear();
         Queue front(2);
         distance_[0][source] = distance_[1][target] = 0;
@@ -294,6 +331,11 @@ public:
             if (do_iteration(front, 0, source, target, dist)) return dist;
             if (do_iteration(front, 1, source, target, dist)) return dist;
         }
+
+        if (best_path_len_ < VERY_LARGE) {
+            return shortest_path(source, target);
+        }
+
         return -1;
     }
 
@@ -363,17 +405,13 @@ public:
     }
 
     double dist(int u, int v) {
-        //return sqrt(xy_[u][0] * xy_[u][0]);
-        // return sqrt(
-        //     pow(xy_[u].first - xy_[v].first, 2) +
-        //     pow(xy_[u].second - xy_[v].second, 2)
-        // );
         double dx = xy_[u].first - xy_[v].first;
         double dy = xy_[u].second - xy_[v].second;
         return sqrt(dx * dx + dy * dy);
     }
 
     double p_f(int u, int source, int target, int side) {
+        // This commented potential makes it p_f(target) == 0
         // if (side == 0) {
         //     return 0.5 * (dist(u, target) - dist(source, u)) + 0.5 * dist(source, target);
         // } else {
@@ -394,6 +432,27 @@ public:
         result += delta;
         Len l = (Len) result;
         return l;
+    }
+
+    bool can_stop(Queue& front, int side, int u, int source, int target) {
+        int other_side = 1 - side;
+
+        if (front[side].empty() || front[other_side].empty()) {
+            return false;
+        }
+
+        Len top_f = front[side].top().first;
+        Len top_r = front[other_side].top().first;
+
+        double front_best_path = top_f - p_f(source, source, target, side);
+        front_best_path += top_r - p_f(target, source, target, other_side);
+
+        double best_path_len_with_estimate = best_path_len_ -
+            p_f(source, source, target, side) +
+            p_f(target, source, target, side);
+
+        bool result = front_best_path >= best_path_len_with_estimate;
+        return result;
     }
 };
 
