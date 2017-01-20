@@ -210,7 +210,7 @@ public:
         return node.second;
     }
 
-    virtual Len potential(int u, int v, int v_index, int source, int target, int side) {
+    virtual Len potential(int u, int v, int source, int target, int side) {
         return 0;
         //return cost_[side][u][v_index];
         //return distance_[side][u] + cost_[side][u][v_index];
@@ -228,7 +228,7 @@ public:
                 distance_[side][v] = actual_dist;
                 parent_[side][v] = u;
 
-                Len extra_estimate = potential(u, v, v_index, source, target, side);
+                Len extra_estimate = potential(u, v, source, target, side);
                 Len alt = actual_dist + extra_estimate;
 
                 front[side].push({alt, v});
@@ -423,7 +423,7 @@ public:
         return result;
     }
 
-    Len potential(int u, int v, int v_index, int source, int target, int side) {
+    Len potential(int u, int v, int source, int target, int side) {
         double result = 0;
         double p_front_u = p_f(u, source, target, side);
         double p_front_v = p_f(v, source, target, side);

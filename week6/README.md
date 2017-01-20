@@ -49,3 +49,9 @@ algorithms.
   get away with simple check whether a vertice has been visited by the
   other direction. For Bidirectional AStar you need to bookkeep mu,
   and check top_f + top_r >= mu after every iteration.
+
+* When front queues are exhausted, make sure to check whether there has been
+  any path found, check mu. If there is, there is a short path.
+
+* Add simple check in the beginning of the query to test whether
+  source == target.
