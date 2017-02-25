@@ -3,6 +3,80 @@
 import sys
 from queue import PriorityQueue
 
+class DijkstraOnedirectional:
+    def __init__(self, n, m):
+        self.n = n                              # Number of nodes
+        self.m = m
+        self.inf = n*10**6                      # All distances in the graph are smaller
+        self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
+        self.visited = [False]*n                  # visited[v] == True iff v was visited by forward or backward search
+        self.workset = []                       # All the nodes visited by forward or backward search
+        self.parent = [[None]*n, [None]*n]      # Used for backtracking
+
+        self.adj = None
+        self.cost = None
+
+    def clear(self):
+        """
+        Reinitialize the data structures for the next query after the previous query.
+        """
+        for v in self.workset:
+            self.dist[0][v] = self.dist[1][v] = self.inf
+            self.parent[0] = self.parent[1] = None
+            self.visited[v] = False
+        del self.workset[0:len(self.workset)]
+
+    def query(self, adj, cost, source, target):
+        if source == target:
+            return 0
+
+        self.clear()
+        queue = [PriorityQueue(), PriorityQueue()]
+
+        self.adj = adj
+        self.cost = cost
+
+        self.dist[0][source] = 0
+        queue[0].put((0, source))
+
+        while not queue[0].empty():
+            _, u = queue[0].get()
+            self.visit(queue, u)
+
+        if self.dist[0][target] != self.inf:
+            return self.backtrack(source, target)
+
+        return -1
+
+    def visit(self, queue, u):
+        """
+        Try to relax the distance to node u from direction side by value dist.
+        """
+        neighbors = self.adj[0][u]
+        for v_index, v in enumerate(neighbors):
+            alt = self.dist[0][u] + self.cost[0][u][v_index]
+
+            if alt < self.dist[0][v]:
+                self.dist[0][v] = alt
+                self.parent[0][v] = u
+                queue[0].put((alt, v))
+
+        self.visited[u] = True
+        self.workset.append(u)
+
+    def backtrack(self, source, target):
+        path = []
+
+        current = target
+        while current != source:
+            path.append(current)
+            current = self.parent[0][current]
+        path.append(current)
+
+        #print(list(reversed(path)))
+        return self.dist[0][target]
+
+
 class DijkstraBidirectional:
     def __init__(self, n, m):
         self.n = n                              # Number of nodes
@@ -125,80 +199,6 @@ class DijkstraBidirectional:
         #     path.append(last)
 
         return dist
-
-
-class DijkstraOnedirectional:
-    def __init__(self, n, m):
-        self.n = n                              # Number of nodes
-        self.m = m
-        self.inf = n*10**6                      # All distances in the graph are smaller
-        self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
-        self.visited = [False]*n                  # visited[v] == True iff v was visited by forward or backward search
-        self.workset = []                       # All the nodes visited by forward or backward search
-        self.parent = [[None]*n, [None]*n]      # Used for backtracking
-
-        self.adj = None
-        self.cost = None
-
-    def clear(self):
-        """
-        Reinitialize the data structures for the next query after the previous query.
-        """
-        for v in self.workset:
-            self.dist[0][v] = self.dist[1][v] = self.inf
-            self.parent[0] = self.parent[1] = None
-            self.visited[v] = False
-        del self.workset[0:len(self.workset)]
-
-    def query(self, adj, cost, source, target):
-        if source == target:
-            return 0
-
-        self.clear()
-        queue = [PriorityQueue(), PriorityQueue()]
-
-        self.adj = adj
-        self.cost = cost
-
-        self.dist[0][source] = 0
-        queue[0].put((0, source))
-
-        while not queue[0].empty():
-            _, u = queue[0].get()
-            self.visit(queue, u)
-
-        if self.dist[0][target] != self.inf:
-            return self.backtrack(source, target)
-
-        return -1
-
-    def visit(self, queue, u):
-        """
-        Try to relax the distance to node u from direction side by value dist.
-        """
-        neighbors = self.adj[0][u]
-        for v_index, v in enumerate(neighbors):
-            alt = self.dist[0][u] + self.cost[0][u][v_index]
-
-            if alt < self.dist[0][v]:
-                self.dist[0][v] = alt
-                self.parent[0][v] = u
-                queue[0].put((alt, v))
-
-        self.visited[u] = True
-        self.workset.append(u)
-
-    def backtrack(self, source, target):
-        path = []
-
-        current = target
-        while current != source:
-            path.append(current)
-            current = self.parent[0][current]
-        path.append(current)
-
-        #print(list(reversed(path)))
-        return self.dist[0][target]
 
 
 def readl():
