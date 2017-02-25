@@ -144,4 +144,19 @@ TEST_CASE("AStar", "[astar]") {
     }
 }
 
+TEST_CASE("Single", "[single]") {
+    SECTION("single") {
+        vector<vector<string>> tests = {
+            //{"./test_astar/sample2.in", "./test_astar/sample2.out"},
+            {"./test_astar/case2.in", "./test_astar/case2.out"},
+        };
+
+       for (auto test : tests) {
+           cout << "TEST IN " << test[0] << " OUT " << test[1] << endl;
+           string actual = runAndReturn(readFromFileWithDistance, test[0]);
+           REQUIRE(slurp(test[1]) == actual);
+       }
+    }
+}
+
 #endif // TEST

@@ -15,6 +15,7 @@ typedef vector<vector<vector<int>>> Adj;
 
 // Distances can grow out of int type
 typedef long long Len;
+//typedef double Len;
 
 // Vector of two priority queues - for forward and backward searches.
 // Each priority queue stores the closest unprocessed node in its head.
@@ -51,6 +52,7 @@ public:
     virtual Len potential(int u, int v, int v_index, int source, int target, int side);
     virtual bool can_stop(Queue& front, int side, int u, int source, int target);
     virtual void print_coords(int source, int target);
+    virtual double dist(int u, int v);
 };
 
 Bidijkstra generateStraight(int numVertices, int edgeCost);

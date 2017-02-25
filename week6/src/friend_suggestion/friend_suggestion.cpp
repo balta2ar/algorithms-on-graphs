@@ -19,8 +19,8 @@ using namespace std;
 typedef vector<vector<vector<int>>> Adj;
 
 // Distances can grow out of int type
-typedef long long Len;
-//typedef double Len;
+//typedef long long Len;
+typedef double Len;
 
 // Vector of two priority queues - for forward and backward searches.
 // Each priority queue stores the closest unprocessed node in its head.
@@ -210,6 +210,12 @@ public:
         return node.second;
     }
 
+    virtual Len edge_cost(int u, int v, int v_index, int source, int target, int side) {
+        Len result = cost_[side][u][v_index];
+        assert(result >= 0);
+        return result;
+    }
+
     virtual Len potential(int u, int v, int source, int target, int side) {
         return 0;
         //return cost_[side][u][v_index];
@@ -217,21 +223,36 @@ public:
     }
 
     void process(Queue& front, int side, int u, int source, int target) {
+        cout << "PROCESSING u " << u << " side " << side << endl;
+
         // process all u's neighbors
         auto neighbors = adj_[side][u];
         for (size_t v_index = 0; v_index < neighbors.size(); v_index++) {
             int v = neighbors[v_index];
-            Len actual_dist = distance_[side][u] + cost_[side][u][v_index];
+            //Len actual_dist = distance_[side][u] + cost_[side][u][v_index];
+            // Len actual_dist = distance_[side][u] + cost_[side][u][v_index] +
+            //     potential(u, v, source, target, side);
+            Len actual_dist = distance_[side][u] +
+                edge_cost(u, v, v_index, source, target, side);
+
+            cout << "side " << side << " u " << u << " v " << v
+                << " actual_dist " << actual_dist
+                << " dist[v] " << distance_[side][v]
+                << endl;
 
             // is this a better path to v?
             if (actual_dist < distance_[side][v]) {
+                cout << "new shorter dist: " << actual_dist
+                    << " < " << distance_[side][v]
+                    << endl;
                 distance_[side][v] = actual_dist;
                 parent_[side][v] = u;
 
-                Len extra_estimate = potential(u, v, source, target, side);
-                Len alt = actual_dist + extra_estimate;
+                //Len extra_estimate = potential(u, v, source, target, side);
+                //Len alt = actual_dist + extra_estimate;
 
-                front[side].push({alt, v});
+                //front[side].push({alt, v});
+                front[side].push({actual_dist, v});
                 workset_.insert(v);
             }
 
@@ -239,15 +260,19 @@ public:
             int other_side = 1 - side;
             //if (visited_[other_side][v]) {
             if (distance_[other_side][v] < VERY_LARGE) {
-                Len new_best_path_len = cost_[side][u][v_index] +
+                //Len new_best_path_len = cost_[side][u][v_index] +
+                Len new_best_path_len = edge_cost(u, v, v_index, source, target, side) +
                     distance_[side][u] + distance_[other_side][v];
+                cout << "new_best_path_len " << new_best_path_len << endl;
 
                 if (new_best_path_len < best_path_len_) {
+                    cout << "update best_path_len_" << endl;
                     best_path_len_ = new_best_path_len;
                 }
             }
         }
 
+        cout << "done with u " << u << endl;
         visited_[side][u] = true;
         workset_.insert(u);
         log_to_file(visited_filename, u);
@@ -262,7 +287,7 @@ public:
         process(front, side, u, source, target);
 
         if (can_stop(front, side, u, source, target)) {
-            dist = shortest_path(source, target);
+            dist = shortest_path(source, target, side);
             return true;
         }
         return false;
@@ -273,7 +298,7 @@ public:
         return visited_[other_side][u];
     }
 
-    int shortest_path(int source, int target) {
+    Len shortest_path(int source, int target, int side) {
         Len dist = VERY_LARGE;
         int u_best = -1;
 
@@ -305,7 +330,7 @@ public:
         // }
         // cout << endl;
 
-        return dist;
+        return dist - potential(source, target, source, target, side);
     }
 
     virtual void print_coords(int source, int target) {
@@ -323,6 +348,8 @@ public:
         //print_coords(source, target);
         //return -1;
 
+        cout << "search from source " << source << " to target " << target << endl;
+
         front[0].push({0, source});
         front[1].push({0, target});
 
@@ -333,7 +360,7 @@ public:
         }
 
         if (best_path_len_ < VERY_LARGE) {
-            return shortest_path(source, target);
+            return shortest_path(source, target, 0);
         }
 
         return -1;
@@ -388,6 +415,8 @@ public:
         : Bidijkstra(n, m, adj, cost), xy_(xy)
     {
         workset_.reserve(n);
+        cout.setf(ios::fixed, ios::floatfield);
+        cout.setf(ios::showpoint);
     }
 
     void print_coords(int source, int target) {
@@ -404,10 +433,20 @@ public:
         //     << xy_[u].first << "," << xy_[u].second << endl;
     }
 
-    double dist(int u, int v) {
+    virtual double dist(int u, int v) {
         double dx = xy_[u].first - xy_[v].first;
         double dy = xy_[u].second - xy_[v].second;
         return sqrt(dx * dx + dy * dy);
+    }
+
+    virtual Len edge_cost(int u, int v, int v_index, int source, int target, int side) {
+        Len result = cost_[side][u][v_index] + potential(u, v, source, target, side);
+        cout << "edge_cost u v " << u << " " << v << " = " << result << endl;
+        cout << "cost " << cost_[side][u][v_index] << " dist " << dist(u, v) << endl;
+        cout << "u " << xy_[u].first << ", " << xy_[u].second << endl;
+        cout << "v " << xy_[v].first << ", " << xy_[v].second << endl;
+        assert(result >= 0);
+        return result;
     }
 
     double p_f(int u, int source, int target, int side) {
@@ -431,6 +470,8 @@ public:
 
         result += delta;
         Len l = (Len) result;
+        cout << "potential u v "<< u << " " << v << " source target " << source << " " << target  << endl;
+        cout << "potential delta " << delta << " l " << l << endl;
         return l;
     }
 
@@ -438,6 +479,7 @@ public:
         int other_side = 1 - side;
 
         if (front[side].empty() || front[other_side].empty()) {
+            cout << "CAN_STOP false: either side is empty" << endl;
             return false;
         }
 
@@ -445,13 +487,16 @@ public:
         Len top_r = front[other_side].top().first;
 
         double front_best_path = top_f - p_f(source, source, target, side);
-        front_best_path += top_r - p_f(target, source, target, other_side);
+        //front_best_path += top_r - p_f(target, source, target, other_side);
+        front_best_path += top_r + p_f(target, source, target, other_side);
 
         double best_path_len_with_estimate = best_path_len_ -
             p_f(source, source, target, side) +
             p_f(target, source, target, side);
 
         bool result = front_best_path >= best_path_len_with_estimate;
+        cout << "CAN_STOP left " << front_best_path << " >= right " << best_path_len_with_estimate << endl;
+        cout << "CAN_STOP side " << side << " u " << u << " result " << result << endl;
         return result;
     }
 };
