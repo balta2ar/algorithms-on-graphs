@@ -1,0 +1,23 @@
+digraph case2_in {
+edge [len=2];
+    1 -> 2 [label="667" color="black"];
+    1 -> 3 [label="677" color="black"];
+    1 -> 4 [label="700" color="black"];
+    1 -> 5 [label="622" color="black"];
+    2 -> 1 [label="118" color="black"];
+    2 -> 3 [label="325" color="black"];
+    2 -> 4 [label="784" color="black"];
+    2 -> 5 [label="11" color="black"];
+    3 -> 1 [label="585" color="black"];
+    3 -> 2 [label="956" color="black"];
+    3 -> 4 [label="551" color="black"];
+    3 -> 5 [label="559" color="black"];
+    4 -> 1 [label="503" color="black"];
+    4 -> 2 [label="722" color="black"];
+    4 -> 3 [label="331" color="black"];
+    4 -> 5 [label="366" color="black"];
+    5 -> 1 [label="880" color="black"];
+    5 -> 2 [label="883" color="black"];
+    5 -> 3 [label="461" color="black"];
+    5 -> 4 [label="228" color="black"];
+}
