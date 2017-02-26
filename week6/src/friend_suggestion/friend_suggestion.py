@@ -3,6 +3,10 @@
 import sys
 from queue import PriorityQueue
 
+
+# -----------------------------------------------------------------------------
+
+
 class DijkstraOnedirectional:
     def __init__(self, n, m):
         self.n = n                              # Number of nodes
@@ -24,7 +28,8 @@ class DijkstraOnedirectional:
             self.dist[0][v] = self.dist[1][v] = self.inf
             self.parent[0] = self.parent[1] = None
             self.visited[v] = False
-        del self.workset[0:len(self.workset)]
+        #del self.workset[0:len(self.workset)]
+        self.workset = []
 
     def query(self, adj, cost, source, target):
         if source == target:
@@ -75,6 +80,9 @@ class DijkstraOnedirectional:
 
         #print(list(reversed(path)))
         return self.dist[0][target]
+
+
+# -----------------------------------------------------------------------------
 
 
 class DijkstraBidirectional:
@@ -199,6 +207,9 @@ class DijkstraBidirectional:
         #     path.append(last)
 
         return dist
+
+
+# -----------------------------------------------------------------------------
 
 
 def readl():

@@ -445,7 +445,7 @@ public:
         // cout << "cost " << cost_[side][u][v_index] << " dist " << dist(u, v) << endl;
         // cout << "u " << xy_[u].first << ", " << xy_[u].second << endl;
         // cout << "v " << xy_[v].first << ", " << xy_[v].second << endl;
-        assert(result >= 0);
+        //assert(result >= 0);
         return result;
     }
 
