@@ -195,7 +195,8 @@ class DijkstraBidirectional:
             #         self.best_path_len = new_best_path_len
 
         self.visited[side][u] = True
-        self.workset.append(u)
+        local_workset.append(u)
+        #self.workset.append(u)
 
     # def can_stop(self, side, u):
     #     other_side = 1 - side

@@ -2,7 +2,7 @@
 
 import sys
 from queue import PriorityQueue
-import math
+from math import sqrt
 
 
 # -----------------------------------------------------------------------------
@@ -29,7 +29,7 @@ class AStarOnedirectional:
         for v in self.workset:
             self.dist[0][v] = self.dist[1][v] = self.inf
             self.visited[v] = False
-            self.parent[0][v] = self.parent[1][v] = None
+            #self.parent[0][v] = self.parent[1][v] = None
         #del self.workset[0:len(self.workset)]
         self.workset = []
 
@@ -52,35 +52,58 @@ class AStarOnedirectional:
 
         return -1
 
-    def get_dist(self, u, v):
-        return (self.x[u] - self.x[v]) ** 2 + (self.y[u] - self.y[v]) ** 2
-
-    def potential(self, u, v, source, target):
-        return -self.get_dist(u, target) + self.get_dist(v, target)
-
-    def get_edge_weight(self, u, v, v_index, source, target):
-        return self.cost[0][u][v_index] + self.potential(u, v, source, target)
+    # def get_dist(self, u, v):
+    #     return (self.x[u] - self.x[v]) ** 2 + (self.y[u] - self.y[v]) ** 2
+    #
+    # def potential(self, u, v, source, target):
+    #     return -self.get_dist(u, target) + self.get_dist(v, target)
+    #
+    # def get_edge_weight(self, u, v, v_index, source, target):
+    #     return self.cost[0][u][v_index] + self.potential(u, v, source, target)
 
     def visit(self, queue, u, source, target):
         """
         Try to relax the distance to node u from direction side by value dist.
         """
-        neighbors = self.adj[0][u]
+        local_adj = self.adj
+        local_cost = self.cost
+        local_dist = self.dist
+        local_parent = self.parent
+        local_workset = self.workset
+        local_x = self.x
+        local_y = self.y
+
+        #neighbors = self.adj[0][u]
+        neighbors = local_adj[0][u]
         for v_index, v in enumerate(neighbors):
             #alt = self.dist[0][u] + self.cost[0][u][v_index]
             #alt = self.dist[0][u] + self.potential(u, source, target)
 
+            #return (self.x[u] - self.x[v]) ** 2 + (self.y[u] - self.y[v]) ** 2
+
+            #return -self.get_dist(u, target) + self.get_dist(v, target)
+            # edge_weight
+            #return self.cost[0][u][v_index] + self.potential(u, v, source, target)
+            dist_u_target = (local_x[u] - local_x[target]) ** 2 + (local_y[u] - local_y[target]) ** 2
+            dist_v_target = (local_x[v] - local_x[target]) ** 2 + (local_y[v] - local_y[target]) ** 2
+            potential = -sqrt(dist_u_target) + sqrt(dist_v_target)
+            edge_weight = local_cost[0][u][v_index] + potential
 
 
-            alt = self.dist[0][u] + self.get_edge_weight(u, v, v_index, source, target)
+            alt = local_dist[0][u] + edge_weight
+            #alt = local_dist[0][u] + self.get_edge_weight(u, v, v_index, source, target)
 
-            if alt < self.dist[0][v]:
-                self.dist[0][v] = alt
-                self.parent[0][v] = u
+            if alt < local_dist[0][v]:
+                local_dist[0][v] = alt
+                local_parent[0][v] = u
                 queue[0].put((alt, v))
+                #local_workset.append(v)
+                print('> %s' % v)
+                #self.workset.append(u)
 
         self.visited[u] = True
-        self.workset.append(u)
+        local_workset.append(u)
+        #self.workset.append(u)
 
     def backtrack(self, source, target):
         path = []
@@ -91,8 +114,13 @@ class AStarOnedirectional:
             current = self.parent[0][current]
         path.append(current)
 
+        dist_source_target = (self.x[source] - self.x[target]) ** 2 + (self.y[source] - self.y[target]) ** 2
+        #dist_target_target = (self.x[target] - self.x[target]) ** 2 + (self.y[target] - self.y[target]) ** 2
+        potential = -sqrt(dist_source_target) #+ dist_target_target
+
         #print(list(reversed(path)))
-        return self.dist[0][target] - self.potential(source, target, source, target)
+        #jreturn self.dist[0][target] - self.potential(source, target, source, target)
+        return int(round(self.dist[0][target] - potential))
 
 
 # -----------------------------------------------------------------------------
@@ -174,6 +202,7 @@ class AStarBidirectional:
                 self.parent[side][v] = u
                 queue[side].put((alt, v))
                 self.workset.append(v)
+                print('> %s' % v)
 
             # update self.best_path_len (mu) if necessary
             other_side = 1 - side
