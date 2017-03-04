@@ -202,7 +202,8 @@ class AStarBidirectional:
         pi_r = sqrt(dist_source_u)
 
         result = (pi_f - pi_r) / 2.
-        return result if side == 0 else -result
+        result *= (1 - side) + -1 * (side) # equivalent of 1. if side == 0 else -1.
+        return result
 
     def visit(self, queue, side, u, source, target):
         local_adj = self.adj
@@ -237,10 +238,12 @@ class AStarBidirectional:
             # potential = -sqrt(dist_u_target) + sqrt(dist_v_target)
             # edge_weight = local_cost[side][u][v_index] + potential
             #potential = -p_f_u + p_f_v if side == 0 else -p_r_v + p_r_u
-            if side == 0:
-                potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
-            else:
-                potential = -self.p(other_side, v, source, target) + self.p(other_side, u, source, target)
+
+            # if side == 0:
+            #     potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
+            # else:
+            #     potential = -self.p(other_side, v, source, target) + self.p(other_side, u, source, target)
+            potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
 
             edge_weight = local_cost[side][u][v_index] + potential
 
@@ -311,10 +314,14 @@ class AStarBidirectional:
         u = source
         v = target
 
-        if side == 0:
-            potential = -self.p(side, v, source, target) + self.p(side, u, source, target)
-        else:
-            potential = -self.p(other_side, v, source, target) + self.p(other_side, u, source, target)
+        print('side', side)
+
+        # if side == 0:
+        #     potential = -self.p(side, v, source, target) + self.p(side, u, source, target)
+        # else:
+        #     potential = -self.p(other_side, v, source, target) + self.p(other_side, u, source, target)
+        potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
+        potential *= (1 - side) + -1 * (side) # equivalent of 1. if side == 0 else -1.
 
         # dist_u_target = (self.x[u] - self.x[target]) ** 2 + (self.y[u] - self.y[target]) ** 2
         # dist_u_source = (self.x[u] - self.x[source]) ** 2 + (self.y[u] - self.y[source]) ** 2
@@ -338,7 +345,7 @@ class AStarBidirectional:
         # potential = -sqrt(dist_u_target) + sqrt(dist_v_target)
         # edge_weight = local_cost[side][u][v_index] + potential
 
-        return int(round(dist + potential))
+        return int(round(dist - potential))
 
 
 # -----------------------------------------------------------------------------
