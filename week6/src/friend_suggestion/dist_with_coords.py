@@ -59,16 +59,19 @@ class AStarOnedirectional:
         return -self.get_dist(u, target) + self.get_dist(v, target)
 
     def get_edge_weight(self, u, v, v_index, source, target):
-        return self.cost[u][v_index] + self.potential(u, v, source, target)
+        return self.cost[0][u][v_index] + self.potential(u, v, source, target)
 
     def visit(self, queue, u, source, target):
         """
         Try to relax the distance to node u from direction side by value dist.
         """
-        neighbors = self.adj[u]
+        neighbors = self.adj[0][u]
         for v_index, v in enumerate(neighbors):
             #alt = self.dist[0][u] + self.cost[0][u][v_index]
             #alt = self.dist[0][u] + self.potential(u, source, target)
+
+
+
             alt = self.dist[0][u] + self.get_edge_weight(u, v, v_index, source, target)
 
             if alt < self.dist[0][v]:
@@ -121,15 +124,12 @@ class AStarBidirectional:
         self.workset = []
         self.best_path_len = self.inf
 
-    def query(self, adj, cost, source, target):
+    def query(self, source, target):
         if source == target:
             return 0
 
         self.clear()
         queue = [PriorityQueue(), PriorityQueue()]
-
-        self.adj = adj
-        self.cost = cost
 
         self.dist[0][source] = self.dist[1][target] = 0
         queue[0].put((0, source))
@@ -156,8 +156,11 @@ class AStarBidirectional:
 
         self.visit(queue, side, u)
 
-        if self.can_stop(side, u):
+        # if self.can_stop(side, u):
+        other_side = 1 - side
+        if self.visited[other_side][u]:
             return self.get_shortest_path(source, target)
+
         return None
 
     def visit(self, queue, side, u):
@@ -184,9 +187,9 @@ class AStarBidirectional:
         self.visited[side][u] = True
         self.workset.append(u)
 
-    def can_stop(self, side, u):
-        other_side = 1 - side
-        return self.visited[other_side][u]
+    # def can_stop(self, side, u):
+    #     other_side = 1 - side
+    #     return self.visited[other_side][u]
 
     def get_min(self, queue, side):
         if queue[side].empty():
@@ -244,7 +247,8 @@ def verify_dist(n, m, adj, cost, x, y):
             assert cost_in_file >= actual_cost, (node_from, node_to, cost_in_file, actual_cost)
         #print(adj[node_from])
 
-def read_from_stdin():
+
+def read_from_stdin_straight():
     n, m = readl()
     x = [0 for _ in range(n)]
     y = [0 for _ in range(n)]
@@ -261,15 +265,45 @@ def read_from_stdin():
     return n, m, adj, cost, x, y
 
 
+def read_from_stdin_reversed():
+    n, m = readl()
+
+    x = [0 for _ in range(n)]
+    y = [0 for _ in range(n)]
+    for i in range(n):
+        a, b = readl()
+        x[i] = a
+        y[i] = b
+
+    # adj = [[] for _ in range(n)]
+    # cost = [[] for _ in range(n)]
+    # for _ in range(m):
+    #     u, v, c = readl()
+    #     adj[u-1].append(v-1)
+    #     cost[u-1].append(c)
+
+    adj = [[[] for _ in range(n)], [[] for _ in range(n)]]
+    cost = [[[] for _ in range(n)], [[] for _ in range(n)]]
+    for _ in range(m):
+        u, v, c = readl()
+        adj[0][u-1].append(v-1)
+        cost[0][u-1].append(c)
+        adj[1][v-1].append(u-1)
+        cost[1][v-1].append(c)
+
+    return n, m, adj, cost, x, y
+
+
 def main():
-    n, m, adj, cost, x, y = read_from_stdin()
+    #n, m, adj, cost, x, y = read_from_stdin_straight()
+    n, m, adj, cost, x, y = read_from_stdin_reversed()
     #verify_dist(n, m, adj, cost, x, y)
     #print('DONE')
-    #return
+    #returread_from_stdin_straight
 
     t, = readl()
 
-    alg = 'aone'
+    alg = 'abi'
     if len(sys.argv) > 1:
         alg = sys.argv[1]
 
