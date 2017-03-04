@@ -28,7 +28,6 @@ class DijkstraOnedirectional:
             self.dist[0][v] = self.dist[1][v] = self.inf
             self.parent[0] = self.parent[1] = None
             self.visited[v] = False
-        #del self.workset[0:len(self.workset)]
         self.workset = []
 
     def query(self, adj, cost, source, target):
@@ -65,7 +64,6 @@ class DijkstraOnedirectional:
                 self.dist[0][v] = alt
                 self.parent[0][v] = u
                 queue[0].put((alt, v))
-                #print('> %s' % v)
 
         self.visited[u] = True
         self.workset.append(u)
@@ -92,11 +90,9 @@ class DijkstraBidirectional:
         self.m = m
         self.inf = n*10**6                      # All distances in the graph are smaller
         self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
-        #self.visited = [False]*n                  # visited[v] == True iff v was visited by forward or backward search
         self.visited = [[False]*n, [False]*n]      # visited[v] == True iff v was visited by forward or backward search
         self.workset = []                       # All the nodes visited by forward or backward search
         self.parent = [[None]*n, [None]*n]      # Used for backtracking
-        #self.best_path_len = self.inf
 
         self.adj = None
         self.cost = None
@@ -105,11 +101,8 @@ class DijkstraBidirectional:
         """Reinitialize the data structures for the next query after the previous query."""
         for v in self.workset:
             self.dist[0][v] = self.dist[1][v] = self.inf
-            #self.parent[0][v] = self.parent[1][v] = None
             self.visited[0][v] = self.visited[1][v] = False
-        #del self.workset[0:len(self.workset)]
         self.workset = []
-        #self.best_path_len = self.inf
 
     def query(self, adj, cost, source, target):
         if source == target:
@@ -134,20 +127,12 @@ class DijkstraBidirectional:
             if dist is not None:
                 return dist
 
-        # if self.best_path_len < self.inf:
-        #     return self.get_shortest_path(source, target)
-
         return -1
 
     def do_iteration(self, queue, side, source, target):
-        #u = self.get_min(queue, side)
-        # if u is None:
-        #     return None
-
         if queue[side].empty():
             return None
         _, u = queue[side].get()
-
 
         self.visit(queue, side, u)
 
@@ -174,41 +159,9 @@ class DijkstraBidirectional:
                 local_parent[side][v] = u
                 queue[side].put((alt, v))
                 local_workset.append(v)
-                #print('> %s' % v)
-
-        # neighbors = self.adj[side][u]
-        #
-        # for v_index, v in enumerate(neighbors):
-        #     alt = self.dist[side][u] + self.cost[side][u][v_index]
-        #
-        #     if alt < self.dist[side][v]:
-        #         self.dist[side][v] = alt
-        #         self.parent[side][v] = u
-        #         queue[side].put((alt, v))
-        #         self.workset.append(v)
-
-            # # update self.best_path_len (mu) if necessary
-            # other_side = 1 - side
-            # if self.dist[other_side][v] < self.inf:
-            #     new_best_path_len = self.cost[side][u][v_index] + \
-            #         self.dist[side][u] + self.dist[other_side][v]
-            #
-            #     if new_best_path_len < self.best_path_len:
-            #         self.best_path_len = new_best_path_len
 
         self.visited[side][u] = True
         local_workset.append(u)
-        #self.workset.append(u)
-
-    # def can_stop(self, side, u):
-    #     other_side = 1 - side
-    #     return self.visited[other_side][u]
-
-    # def get_min(self, queue, side):
-    #     if queue[side].empty():
-    #         return None
-    #     _, u = queue[side].get()
-    #     return u
 
     def get_shortest_path(self, source, target):
         dist = self.inf
