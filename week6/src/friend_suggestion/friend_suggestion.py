@@ -65,6 +65,7 @@ class DijkstraOnedirectional:
                 self.dist[0][v] = alt
                 self.parent[0][v] = u
                 queue[0].put((alt, v))
+                #print('> %s' % v)
 
         self.visited[u] = True
         self.workset.append(u)
@@ -173,6 +174,7 @@ class DijkstraBidirectional:
                 local_parent[side][v] = u
                 queue[side].put((alt, v))
                 local_workset.append(v)
+                #print('> %s' % v)
 
         # neighbors = self.adj[side][u]
         #
