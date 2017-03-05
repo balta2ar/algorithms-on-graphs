@@ -59,7 +59,7 @@ def read_visited(filename):
     return nodes
 
 
-def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
+def draw_graph_cairo(input_graph, visited_filename, coordinates, output, background, size):
 
     if coordinates:
         edges = read_graph(input_graph)
@@ -154,9 +154,9 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
     ctx = cairo.Context(surface)
 
-    if isfile(output):
-        print('Loading surface cache from %s' % output)
-        img = cairo.ImageSurface.create_from_png(output)
+    if isfile(background):
+        print('Loading surface cache from %s' % background)
+        img = cairo.ImageSurface.create_from_png(background)
         ctx.set_source_surface(img, 0, 0)
         ctx.paint()
     else:
@@ -170,12 +170,12 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
     #ctx.translate(tx * 0.9, ty * 0.9)
     ctx.translate(tx, ty)
 
-    if not isfile(output):
+    if not isfile(background):
         draw_vertices(ctx)
         draw_edges(ctx)
 
-        print('Writing to %s' % output)
-        surface.write_to_png(output)
+        print('Writing to %s' % background)
+        surface.write_to_png(background)
 
     #i = 0
     #surface.write_to_png(output)
@@ -197,9 +197,11 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
             #if i > 10:
             #    break
 
-        visited_output = dirname(output) + '/' + basename(output).rsplit('.', 1)[0] + '.visited.png'
-        print('Writing visited to %s' % visited_output)
-        surface.write_to_png(visited_output)
+    #visited_output = dirname(output) + '/' + basename(output).rsplit('.', 1)[0] + '.visited.png'
+    #print('Writing visited to %s' % visited_output)
+    #surface.write_to_png(visited_output)
+    print('Writing final result to %s' % output)
+    surface.write_to_png(output)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -212,6 +214,8 @@ def parse_args():
                         help='Filename with vertice coordinates')
     parser.add_argument('--output', type=str,
                         help='Output filename')
+    parser.add_argument('--background', type=str,
+                        help='Initial image to start drawing with (cache/background)')
     parser.add_argument('--size', type=int, default=2000,
                         help='Width and height of the output image in pixels')
 
@@ -233,6 +237,7 @@ def main():
                      args.visited,
                      args.coords,
                      args.output,
+                     args.background,
                      args.size)
 
 
