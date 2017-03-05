@@ -3,16 +3,21 @@
 import sys
 import argparse
 import random
+import time
+from functools import partial
 
 from friend_suggestion import DijkstraOnedirectional
 from friend_suggestion import DijkstraBidirectional
 from dist_with_coords import AStarOnedirectional
 from dist_with_coords import AStarBidirectional
 from landmarks import BreadthFirstSearchOneToAll
+from landmarks import LandmarksAStarOnedirectional
+from landmarks import LandmarksAStarBidirectional
 from dijkstra import ReferenceDijkstra
 
 
-TEMPLATE = '%15s'
+TEMPLATE = '%10s'
+TIMES = '%10.5f'
 
 
 def readl():
@@ -45,33 +50,47 @@ class MistatchException(Exception):
     pass
 
 
-def verify_all(algs, s, t, stop):
-    results = [alg.query(s-1, t-1) for name, alg in algs]
+def profile_execution(method):
+    start = time.time()
+    result = method()
+    delta = time.time() - start
+    return delta, result
+
+
+def verify_all(algs, s, t, stop, hide_results, profile):
+    #results = [alg.query(s-1, t-1) for name, alg in algs]
+    results = [profile_execution(partial(alg.query, s-1, t-1))
+               for name, alg in algs]
+    deltas, results = zip(*results)
+
     len_results = len(set(results))
-    mismatch = 'MISMATCH' if len_results > 1 else ''
-    results = [TEMPLATE % mismatch] + [TEMPLATE % result for result in results]
-    results.append(TEMPLATE % ('%s %s' % (s, t),))
-    print(''.join(results))
+    if not hide_results:
+        mismatch = 'MISMATCH' if len_results > 1 else ''
+        results = [TEMPLATE % mismatch] + [TEMPLATE % result for result in results]
+        results.append(TEMPLATE % ('%s %s' % (s, t),))
+        print(''.join(results))
+
+    if profile:
+        deltas = [TEMPLATE % '<time>'] + [TIMES % delta for delta in deltas]
+        print(''.join(deltas))
+
     if stop and len_results != 1:
         raise MistatchException()
     #print(astar.query(s-1, t-1))
 
 
-def run_embedded_queries(stop, algs, t):
+def run_embedded_queries(algs, t, stop, hide_results, profile):
     for _ in range(t):
         s, t = readl()
-        verify_all(algs, s, t, stop)
+        verify_all(algs, s, t, stop, hide_results, profile)
 
 
-def run_random_queries(stop, seed, random_queries, algs, n):
-    if seed is None:
-        seed = random.randint(0, 1e9)
-    random.seed(seed)
+def run_random_queries(algs, n, stop, seed, random_queries, hide_results, profile):
     print('Executing %d random random queries (seed %s)' % \
             (random_queries, seed))
     for _ in range(random_queries):
         s, t = random.randint(1, n), random.randint(1, n)
-        verify_all(algs, s, t, stop)
+        verify_all(algs, s, t, stop, hide_results, profile)
 
 
 def parse_args():
@@ -84,6 +103,10 @@ def parse_args():
                         help='If True, skips embedder queries into the graph')
     parser.add_argument('--stop', default=False, action='store_true',
                         help='Stop on first mismatch occurence')
+    parser.add_argument('--profile', default=False, action='store_true',
+                        help='Profile each algorithm query execution')
+    parser.add_argument('--hide-results', default=False, action='store_true',
+                        help='Hide query results (calculated distances)')
     return parser.parse_args()
 
 
@@ -94,26 +117,39 @@ def main():
     t, = readl()
 
     algs = [
-        ('DijkOne', DijkstraOnedirectional(n, m, adj, cost)),
-        ('DijkBi', DijkstraBidirectional(n, m, adj, cost)),
-        ('AStarOne', AStarOnedirectional(n, m, adj, cost, x, y)),
-        ('AStarBi', AStarBidirectional(n, m, adj, cost, x, y)),
         ('BFS', BreadthFirstSearchOneToAll(n, m, adj, cost)),
+        ('DijkOne', DijkstraOnedirectional(n, m, adj, cost)),
+        ('AStarOne', AStarOnedirectional(n, m, adj, cost, x, y)),
+        ('ALTOne', LandmarksAStarOnedirectional(n, m, adj, cost, x, y)),
+        ('DijkBi', DijkstraBidirectional(n, m, adj, cost)),
+        ('AStarBi', AStarBidirectional(n, m, adj, cost, x, y)),
+        ('ALTBi', LandmarksAStarBidirectional(n, m, adj, cost, x, y)),
         # ('RefDijk', ReferenceDijkstra(n, m, adj, cost)),
     ]
 
-    results = [TEMPLATE % ''] + [TEMPLATE % name for name, _ in algs] + [TEMPLATE % 's -> t']
-    print(''.join(results))
+    header = [TEMPLATE % ''] + [TEMPLATE % name for name, _ in algs] + [TEMPLATE % 's -> t']
+    print(''.join(header))
 
+    result = 0
     try:
         if not args.skip_embedded:
-            run_embedded_queries(args.stop, algs, t)
+            run_embedded_queries(algs, t, args.stop,
+                                 args.hide_results, args.profile)
 
         if args.random_queries > 0:
-            run_random_queries(args.stop, args.seed, args.random_queries, algs, n)
+            if args.seed is None:
+                args.seed = random.randint(0, 1e9)
+            random.seed(args.seed)
+            run_random_queries(algs, n,
+                               args.stop, args.seed, args.random_queries,
+                               args.hide_results, args.profile)
     except MistatchException:
-        print('Mismatch found, stopping')
+        print('Mismatch found, stopping (seed %s)' % args.seed)
+        result = 1
+    print(''.join(header))
+
+    return result
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
