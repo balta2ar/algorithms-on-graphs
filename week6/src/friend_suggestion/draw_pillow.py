@@ -1,7 +1,10 @@
 import sys
 import argparse
+from os.path import basename, dirname, isfile
+
+import cairo
+from math import pi
 import numpy as np
-from os.path import basename, dirname
 
 
 def draw_graph_pillow(visited, coordinates, output):
@@ -57,8 +60,6 @@ def read_visited(filename):
 
 
 def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
-    import cairo
-    from math import pi
 
     if coordinates:
         edges = read_graph(input_graph)
@@ -67,12 +68,6 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
         edges, coords = read_graph(input_graph, with_coords=True)
 
     WIDTH, HEIGHT = size, size
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
-    ctx = cairo.Context(surface)
-
-    ctx.set_source_rgb(1, 1, 1)
-    ctx.rectangle(-WIDTH, -HEIGHT, WIDTH*2, HEIGHT*2)
-    ctx.fill()
 
     smallest_side = min(WIDTH, HEIGHT)
     while (coords.max() - coords.min()) > smallest_side:
@@ -93,8 +88,10 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
     #offset = 0.15
     w = h = max(dw, dh) / 500.
     offset = w / 2.
-    text_offset = offset * 2
+    #text_offset = offset * 2
     print('circle w h %s offset %s' % (w, offset))
+    vertice_w, edge_w, visited_w = 0.6, w, 0.5 * 10
+    print('vertice_w %s edge_w %s visited_w %s' % (vertice_w, edge_w, visited_w))
 
     #ctx.translate(WIDTH/2. + 200, HEIGHT/2. - 200)
     #ctx.scale(SCALE, SCALE)
@@ -103,19 +100,16 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
     #tx, ty = WIDTH/2. + min_x - dw, HEIGHT/2. + min_y - dh
     tx, ty = -min_x, -min_y
     print('ts', tx, ty)
-    #ctx.scale(ratiow, ratiov)
-    ctx.scale(scale * 0.95, scale * 0.95)
-    #ctx.translate(tx * 0.9, ty * 0.9)
-    ctx.translate(tx, ty)
+    num = None # 10000
 
-    def draw_line(x1, y1, x2, y2):
+    def draw_line(ctx, x1, y1, x2, y2):
         ctx.save()
         ctx.move_to(x1 + offset, y1 + offset)
         ctx.line_to(x2 + offset, y2 + offset)
         ctx.stroke()
         ctx.restore()
 
-    def draw_circle(x, y, w, h):
+    def draw_circle(ctx, x, y, w, h):
         ctx.save()
         ctx.translate(x + w / 2., y + h / 2.)
         ctx.scale(w / 2., h / 2.)
@@ -123,61 +117,88 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
         ctx.stroke()
         ctx.restore()
 
-    def draw_text(x, y, text):
-        ctx.save()
-        ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        ctx.set_font_size(0.2)
-        ctx.set_source_rgb(0, 0, 0)
-        ctx.move_to(x, y)
-        #ctx.show_text(text)
-        ctx.restore()
+    # def draw_text(ctx, x, y, text):
+    #     ctx.save()
+    #     ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+    #     ctx.set_font_size(0.2)
+    #     ctx.set_source_rgb(0, 0, 0)
+    #     ctx.move_to(x, y)
+    #     #ctx.show_text(text)
+    #     ctx.restore()
 
-    num = None # 10000
-    limited = coords[:num] if num is not None else coords
-    print('Drawing %d vertices' % len(limited))
-    for i, (x, y) in enumerate(limited):
-        sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
-        sys.stdout.flush()
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.7)
-        draw_text(x + text_offset, y + 2 * text_offset, str(i))
-        ctx.set_line_width(0.6)
-        draw_circle(x, y, w, h)
-        #print(x, y)
-    print('')
+    def draw_vertices(ctx):
+        limited = coords[:num] if num is not None else coords
+        print('Drawing %d vertices' % len(limited))
+        for i, (x, y) in enumerate(limited):
+            sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
+            sys.stdout.flush()
+            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.7)
+            #draw_text(ctx, x + text_offset, y + 2 * text_offset, str(i))
+            ctx.set_line_width(vertice_w)
+            draw_circle(ctx, x, y, w, h)
+            #print(x, y)
+        print('')
 
-    limited = edges[:num] if num is not None else edges
-    print('Drawing %d edges' % len(limited))
-    for i, (u, v) in enumerate(limited): #edges: #[:10]:
-        sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
-        sys.stdout.flush()
-        a, b = coords[u], coords[v]
-        ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
-        ctx.set_line_width(w)
-        draw_line(a[0], a[1], b[0], b[1])
-    print('')
+    def draw_edges(ctx):
+        limited = edges[:num] if num is not None else edges
+        print('Drawing %d edges' % len(limited))
+        for i, (u, v) in enumerate(limited): #edges: #[:10]:
+            sys.stdout.write('%0.02f   \r' % (100. * i / len(limited)))
+            sys.stdout.flush()
+            a, b = coords[u], coords[v]
+            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
+            ctx.set_line_width(edge_w)
+            draw_line(ctx, a[0], a[1], b[0], b[1])
+        print('')
 
-    i = 0
-    # print('Writing to %s' % output)
-    # surface.write_to_png(output)
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
+    ctx = cairo.Context(surface)
 
+    if isfile(output):
+        print('Loading surface cache from %s' % output)
+        img = cairo.ImageSurface.create_from_png(output)
+        ctx.set_source_surface(img, 0, 0)
+        ctx.paint()
+    else:
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.rectangle(-WIDTH, -HEIGHT, WIDTH*2, HEIGHT*2)
+        ctx.fill()
+
+    ctx.set_source_rgb(1, 1, 1)
+    #ctx.scale(ratiow, ratiov)
+    ctx.scale(scale * 0.95, scale * 0.95)
+    #ctx.translate(tx * 0.9, ty * 0.9)
+    ctx.translate(tx, ty)
+
+    if not isfile(output):
+        draw_vertices(ctx)
+        draw_edges(ctx)
+
+        print('Writing to %s' % output)
+        surface.write_to_png(output)
+
+    #i = 0
     #surface.write_to_png(output)
     #surface.write_to_png('frames/%06d.png' % i)
     #return
 
     if visited_filename:
-        visited = read_visited(visited_filename)
-        for node in visited:
+        visited = set(read_visited(visited_filename))
+        print('Drawing %d visited edges' % len(visited))
+        for i, node in enumerate(visited):
+            sys.stdout.write('%0.02f   \r' % (100. * i / len(visited)))
+            sys.stdout.flush()
             x, y = coords[node]
-
             ctx.set_source_rgba(0.9, 0.1, 0.1, 0.7)
-            ctx.set_line_width(0.5)
-            draw_circle(x, y, w, h)
+            ctx.set_line_width(visited_w)
+            draw_circle(ctx, x, y, w, h)
             #surface.write_to_png('frames/%06d.png' % i)
             i += 1
             #if i > 10:
             #    break
+
         visited_output = dirname(output) + '/' + basename(output).rsplit('.', 1)[0] + '.visited.png'
-        print('Writing to %s' % visited_output)
+        print('Writing visited to %s' % visited_output)
         surface.write_to_png(visited_output)
 
 def parse_args():
