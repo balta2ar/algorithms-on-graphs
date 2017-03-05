@@ -45,10 +45,14 @@ class AStarOnedirectional:
             _, u = queue[0].get()
             self.visit(queue, u, source, target)
 
-        if self.dist[0][target] != self.inf:
-            return self.backtrack(source, target)
+            if self.dist[0][target] != self.inf:
+                return self.backtrack(source, target)
 
         return -1
+
+    def p(self, u, source, target):
+        dist_u_target = (self.x[u] - self.x[target]) ** 2 + (self.y[u] - self.y[target]) ** 2
+        return sqrt(dist_u_target)
 
     def visit(self, queue, u, source, target):
         """
@@ -57,42 +61,44 @@ class AStarOnedirectional:
         local_adj = self.adj
         local_cost = self.cost
         local_dist = self.dist
-        local_parent = self.parent
+        #local_parent = self.parent
         local_workset = self.workset
-        local_x = self.x
-        local_y = self.y
+        #local_x = self.x
+        #local_y = self.y
 
         neighbors = local_adj[0][u]
         for v_index, v in enumerate(neighbors):
-            dist_u_target = (local_x[u] - local_x[target]) ** 2 + (local_y[u] - local_y[target]) ** 2
-            dist_v_target = (local_x[v] - local_x[target]) ** 2 + (local_y[v] - local_y[target]) ** 2
-            potential = -sqrt(dist_u_target) + sqrt(dist_v_target)
+            print(v, file=sys.stderr)
+            potential = -self.p(u, source, target) + self.p(v, source, target)
             edge_weight = local_cost[0][u][v_index] + potential
 
             alt = local_dist[0][u] + edge_weight
 
             if alt < local_dist[0][v]:
                 local_dist[0][v] = alt
-                local_parent[0][v] = u
+                #local_parent[0][v] = u
                 queue[0].put((alt, v))
-                local_workset.append(v)
+                #local_workset.append(v)
 
         self.visited[u] = True
         local_workset.append(u)
 
     def backtrack(self, source, target):
-        path = []
+        # path = []
 
-        current = target
-        while current != source:
-            path.append(current)
-            current = self.parent[0][current]
-        path.append(current)
+        # current = target
+        # while current != source:
+        #     path.append(current)
+        #     current = self.parent[0][current]
+        # path.append(current)
 
-        dist_source_target = (self.x[source] - self.x[target]) ** 2 + (self.y[source] - self.y[target]) ** 2
-        potential = -sqrt(dist_source_target) #+ dist_target_target
+        u = source
+        v = target
+
+        potential = -self.p(u, source, target) + self.p(v, source, target)
 
         #print(list(reversed(path)))
+        #return int(round(self.dist[0][target] - potential))
         return int(round(self.dist[0][target] - potential))
 
 
@@ -180,6 +186,7 @@ class AStarBidirectional:
         neighbors = local_adj[side][u]
 
         for v_index, v in enumerate(neighbors):
+            print(v, file=sys.stderr)
             potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
             edge_weight = local_cost[side][u][v_index] + potential
             alt = local_dist[side][u] + edge_weight

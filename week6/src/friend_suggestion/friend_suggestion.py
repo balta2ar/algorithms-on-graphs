@@ -26,7 +26,7 @@ class DijkstraOnedirectional:
         """
         for v in self.workset:
             self.dist[0][v] = self.dist[1][v] = self.inf
-            self.parent[0] = self.parent[1] = None
+            #self.parent[0] = self.parent[1] = None
             self.visited[v] = False
         self.workset = []
 
@@ -47,8 +47,8 @@ class DijkstraOnedirectional:
             _, u = queue[0].get()
             self.visit(queue, u)
 
-        if self.dist[0][target] != self.inf:
-            return self.backtrack(source, target)
+            if self.dist[0][target] != self.inf:
+                return self.backtrack(source, target)
 
         return -1
 
@@ -58,24 +58,28 @@ class DijkstraOnedirectional:
         """
         neighbors = self.adj[0][u]
         for v_index, v in enumerate(neighbors):
+            # if self.visited[v]:
+            #     continue
+
+            print(v, file=sys.stderr)
             alt = self.dist[0][u] + self.cost[0][u][v_index]
 
             if alt < self.dist[0][v]:
                 self.dist[0][v] = alt
-                self.parent[0][v] = u
+                #self.parent[0][v] = u
                 queue[0].put((alt, v))
 
         self.visited[u] = True
         self.workset.append(u)
 
     def backtrack(self, source, target):
-        path = []
+        # path = []
 
-        current = target
-        while current != source:
-            path.append(current)
-            current = self.parent[0][current]
-        path.append(current)
+        # current = target
+        # while current != source:
+        #     path.append(current)
+        #     current = self.parent[0][current]
+        # path.append(current)
 
         #print(list(reversed(path)))
         return self.dist[0][target]
@@ -152,6 +156,7 @@ class DijkstraBidirectional:
         neighbors = local_adj[side][u]
 
         for v_index, v in enumerate(neighbors):
+            print(v, file=sys.stderr)
             alt = local_dist[side][u] + local_cost[side][u][v_index]
 
             if alt < local_dist[side][v]:
