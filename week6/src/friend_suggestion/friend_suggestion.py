@@ -8,17 +8,16 @@ from queue import PriorityQueue
 
 
 class DijkstraOnedirectional:
-    def __init__(self, n, m):
+    def __init__(self, n, m, adj, cost):
         self.n = n                              # Number of nodes
         self.m = m
+        self.adj = adj
+        self.cost = cost
         self.inf = n*10**6                      # All distances in the graph are smaller
         self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
         self.visited = [False]*n                  # visited[v] == True iff v was visited by forward or backward search
         self.workset = []                       # All the nodes visited by forward or backward search
         self.parent = [[None]*n, [None]*n]      # Used for backtracking
-
-        self.adj = None
-        self.cost = None
 
     def clear(self):
         """
@@ -30,15 +29,12 @@ class DijkstraOnedirectional:
             self.visited[v] = False
         self.workset = []
 
-    def query(self, adj, cost, source, target):
+    def query(self, source, target):
         if source == target:
             return 0
 
         self.clear()
         queue = [PriorityQueue(), PriorityQueue()]
-
-        self.adj = adj
-        self.cost = cost
 
         self.dist[0][source] = 0
         queue[0].put((0, source))
@@ -89,17 +85,16 @@ class DijkstraOnedirectional:
 
 
 class DijkstraBidirectional:
-    def __init__(self, n, m):
+    def __init__(self, n, m, adj, cost):
         self.n = n                              # Number of nodes
         self.m = m
+        self.adj = adj
+        self.cost = cost
         self.inf = n*10**6                      # All distances in the graph are smaller
         self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
         self.visited = [[False]*n, [False]*n]      # visited[v] == True iff v was visited by forward or backward search
         self.workset = []                       # All the nodes visited by forward or backward search
         self.parent = [[None]*n, [None]*n]      # Used for backtracking
-
-        self.adj = None
-        self.cost = None
 
     def clear(self):
         """Reinitialize the data structures for the next query after the previous query."""
@@ -108,15 +103,12 @@ class DijkstraBidirectional:
             self.visited[0][v] = self.visited[1][v] = False
         self.workset = []
 
-    def query(self, adj, cost, source, target):
+    def query(self, source, target):
         if source == target:
             return 0
 
         self.clear()
         queue = [PriorityQueue(), PriorityQueue()]
-
-        self.adj = adj
-        self.cost = cost
 
         self.dist[0][source] = self.dist[1][target] = 0
         queue[0].put((0, source))
@@ -224,15 +216,15 @@ def main():
         alg = sys.argv[1]
 
     if alg == 'one':
-        bidij = DijkstraOnedirectional(n, m)
+        bidij = DijkstraOnedirectional(n, m, adj, cost)
     elif alg == 'bi':
-        bidij = DijkstraBidirectional(n, m)
+        bidij = DijkstraBidirectional(n, m, adj, cost)
     else:
         print('Unknown algorithm: %s' % alg)
 
     for _ in range(t):
         s, t = readl()
-        print(bidij.query(adj, cost, s-1, t-1))
+        print(bidij.query(s-1, t-1))
 
 
 if __name__ == '__main__':
