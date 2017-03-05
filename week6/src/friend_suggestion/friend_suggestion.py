@@ -54,7 +54,7 @@ class DijkstraOnedirectional:
         """
         neighbors = self.adj[0][u]
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             alt = self.dist[0][u] + self.cost[0][u][v_index]
 
             if alt < self.dist[0][v]:
@@ -146,7 +146,7 @@ class DijkstraBidirectional:
         neighbors = local_adj[side][u]
 
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             alt = local_dist[side][u] + local_cost[side][u][v_index]
 
             if alt < local_dist[side][v]:

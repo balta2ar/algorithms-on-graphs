@@ -68,7 +68,7 @@ class AStarOnedirectional:
 
         neighbors = local_adj[0][u]
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             potential = -self.p(u, source, target) + self.p(v, source, target)
             edge_weight = local_cost[0][u][v_index] + potential
 
@@ -179,14 +179,13 @@ class AStarBidirectional:
         local_dist = self.dist
         local_parent = self.parent
         local_workset = self.workset
-        local_x = self.x
-        local_y = self.y
+        # local_x = self.x
+        # local_y = self.y
 
-        other_side = 1 - side
         neighbors = local_adj[side][u]
 
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
             edge_weight = local_cost[side][u][v_index] + potential
             alt = local_dist[side][u] + edge_weight
