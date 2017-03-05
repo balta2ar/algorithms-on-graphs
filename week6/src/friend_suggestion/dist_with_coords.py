@@ -45,8 +45,8 @@ class AStarOnedirectional:
             _, u = queue[0].get()
             self.visit(queue, u, source, target)
 
-            if self.dist[0][target] != self.inf:
-                return self.backtrack(source, target)
+        if self.dist[0][target] != self.inf:
+            return self.backtrack(source, target)
 
         return -1
 

@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import sys
+import argparse
+import random
 
 from friend_suggestion import DijkstraOnedirectional
 from friend_suggestion import DijkstraBidirectional
@@ -8,6 +10,9 @@ from dist_with_coords import AStarOnedirectional
 from dist_with_coords import AStarBidirectional
 from landmarks import BreadthFirstSearchOneToAll
 from dijkstra import ReferenceDijkstra
+
+
+TEMPLATE = '%15s'
 
 
 def readl():
@@ -36,7 +41,55 @@ def read_from_stdin_reversed():
     return n, m, adj, cost, x, y
 
 
+class MistatchException(Exception):
+    pass
+
+
+def verify_all(algs, s, t, stop):
+    results = [alg.query(s-1, t-1) for name, alg in algs]
+    len_results = len(set(results))
+    mismatch = 'MISMATCH' if len_results > 1 else ''
+    results = [TEMPLATE % mismatch] + [TEMPLATE % result for result in results]
+    results.append(TEMPLATE % ('%s %s' % (s, t),))
+    print(''.join(results))
+    if stop and len_results != 1:
+        raise MistatchException()
+    #print(astar.query(s-1, t-1))
+
+
+def run_embedded_queries(stop, algs, t):
+    for _ in range(t):
+        s, t = readl()
+        verify_all(algs, s, t, stop)
+
+
+def run_random_queries(stop, seed, random_queries, algs, n):
+    if seed is None:
+        seed = random.randint(0, 1e9)
+    random.seed(seed)
+    print('Executing %d random random queries (seed %s)' % \
+            (random_queries, seed))
+    for _ in range(random_queries):
+        s, t = random.randint(1, n), random.randint(1, n)
+        verify_all(algs, s, t, stop)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--random-queries', type=int, default=0,
+                        help='Number of additional random queries')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='Initial seed')
+    parser.add_argument('--skip-embedded', default=False, action='store_true',
+                        help='If True, skips embedder queries into the graph')
+    parser.add_argument('--stop', default=False, action='store_true',
+                        help='Stop on first mismatch occurence')
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     n, m, adj, cost, x, y = read_from_stdin_reversed()
     t, = readl()
 
@@ -49,17 +102,17 @@ def main():
         # ('RefDijk', ReferenceDijkstra(n, m, adj, cost)),
     ]
 
-    template = '%15s'
-    results = [template % ''] + [template % name for name, _ in algs]
+    results = [TEMPLATE % ''] + [TEMPLATE % name for name, _ in algs] + [TEMPLATE % 's -> t']
     print(''.join(results))
 
-    for _ in range(t):
-        s, t = readl()
-        results = [alg.query(s-1, t-1) for name, alg in algs]
-        mismatch = 'MISMATCH' if len(set(results)) > 1 else ''
-        results = [template % mismatch] + [template % result for result in results]
-        print(''.join(results))
-        #print(astar.query(s-1, t-1))
+    try:
+        if not args.skip_embedded:
+            run_embedded_queries(args.stop, algs, t)
+
+        if args.random_queries > 0:
+            run_random_queries(args.stop, args.seed, args.random_queries, algs, n)
+    except MistatchException:
+        print('Mismatch found, stopping')
 
 
 if __name__ == '__main__':

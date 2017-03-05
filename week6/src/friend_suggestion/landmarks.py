@@ -6,6 +6,29 @@ http://www.redblobgames.com/pathfinding/a-star/introduction.html
 Landmarks:
 
     1. Implement BFS to precompute Landmarks (A) to/from All distances
+
+Notes:
+
+function distance_heuristic(a, z) {
+    return Math.abs(a.x - z.x) + Math.abs(a.y - z.y);
+}
+
+function landmark_heuristic(a, z) {
+    return Math.max(distance_heuristic(a, z), L_cost[z] - L_cost[a]);
+}
+
+function landmark_heuristic(a, z) {
+    return Math.max(distance_heuristic(a, z), Math.abs(L_cost[z] - L_cost[a]));
+}
+
+function landmark_heuristic(a, z) {
+    // Assume landmarks are in array L_costs[]
+    var d = distance_heuristic(a, z);
+    for (var i = 0; i < L_costs.length; i++) {
+        d = Math.max(d, L_costs[i][z] - L_costs[i][a]);
+    }
+    return d;
+}
 """
 
 import sys
