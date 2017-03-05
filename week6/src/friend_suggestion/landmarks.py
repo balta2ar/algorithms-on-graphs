@@ -34,6 +34,8 @@ function landmark_heuristic(a, z) {
 import sys
 from queue import PriorityQueue, Queue
 from math import sqrt
+#from copy import copy
+import pickle
 
 
 class BreadthFirstSearchOneToAll:
@@ -72,9 +74,59 @@ class BreadthFirstSearchOneToAll:
                 #if v not in visited:
                 #    visited.add(v)
 
-        if self.dist[target] != self.inf:
-            return self.dist[target]
+        if target is not None:
+            if self.dist[target] != self.inf:
+                return self.dist[target]
         return -1
+
+
+class LandmarksHeuristic:
+    CACHE_FILENAME = 'untracked/astar/landmarks.pkl.cache'
+
+    def __init__(self, n, m, adj, cost, nodes):
+        self.costs = self.load_cache()
+        if self.costs is None:
+            self.costs = self.preprocess(n, m, adj, cost, nodes)
+        self.save_cache(self.costs)
+
+    def preprocess(self, n, m, adj, cost, nodes):
+        costs = []
+        bfs = BreadthFirstSearchOneToAll(n, m, adj, cost)
+        for _, node in enumerate(nodes):
+            #print('Processing landmark %s/%s' % (i+1, len(nodes)))
+            print('.', end='', flush=True)
+            bfs.query(node, None)
+            costs.append(bfs.dist[:])
+        print()
+        return costs
+
+    def dist(self, u, v, initial_cost):
+        cost = initial_cost
+        for landmark in self.costs:
+            cost = max(cost, landmark[v] - landmark[u])
+            cost = max(cost, landmark[u] - landmark[v])
+        return cost
+
+    def load_cache(self):
+        try:
+            costs = []
+            with open(LandmarksHeuristic.CACHE_FILENAME, 'rb') as cache_:
+                costs = pickle.load(cache_)
+                # for line in cache_:
+                #     landmark = [int(x) for x in line.strip().split()]
+                #     costs.append(landmark)
+            print('Loaded landmarks from %s' % LandmarksHeuristic.CACHE_FILENAME)
+            return costs
+        except IOError:
+            return None
+
+    def save_cache(self, obj):
+        with open(LandmarksHeuristic.CACHE_FILENAME, 'wb') as cache_:
+            pickle.dump(obj, cache_, pickle.HIGHEST_PROTOCOL)
+            # for landmark in self.costs:
+            #     line = ' '.join(map(str, landmark))
+            #     cache_.write('%s\n' % line)
+
 
 
 class LandmarksAStarOnedirectional:
@@ -89,9 +141,22 @@ class LandmarksAStarOnedirectional:
         self.visited = [False]*n
         self.workset = []
         self.parent = [[None]*n, [None]*n]      # Used for backtracking
-        # Coordinates of the nodes
         self.x = x
         self.y = y
+
+        nodes = self.read_landmark_nodes()
+        print('Preprocessing landmarks', nodes)
+        self.landmarks = LandmarksHeuristic(n, m, adj, cost, nodes)
+        print('Preprocessed %s landmarks' % len(nodes))
+
+    def read_landmark_nodes(self):
+        #with open('untracked/astar/landmarks.usa-road.10k.txt') as file_:
+        with open('untracked/astar/landmarks.usa-road.txt') as file_:
+            nodes = list(map(int, file_.readlines()))
+            # count = int(file_.readline().strip())
+            # for _ in range(count):
+            #     nodes = [int(x) for x in file_.readline().strip().split()]
+        return nodes
 
     # See the explanation of this method in the starter for friend_suggestion
     def clear(self):
@@ -121,7 +186,9 @@ class LandmarksAStarOnedirectional:
 
     def p(self, u, source, target):
         dist_u_target = (self.x[u] - self.x[target]) ** 2 + (self.y[u] - self.y[target]) ** 2
-        return sqrt(dist_u_target)
+        potential = sqrt(dist_u_target)
+        potential = self.landmarks.dist(u, target, potential)
+        return potential
 
     def visit(self, queue, u, source, target):
         """
@@ -137,7 +204,7 @@ class LandmarksAStarOnedirectional:
 
         neighbors = local_adj[0][u]
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             potential = -self.p(u, source, target) + self.p(v, source, target)
             edge_weight = local_cost[0][u][v_index] + potential
 
@@ -147,7 +214,7 @@ class LandmarksAStarOnedirectional:
                 local_dist[0][v] = alt
                 #local_parent[0][v] = u
                 queue[0].put((alt, v))
-                #local_workset.append(v)
+                local_workset.append(v)
 
         self.visited[u] = True
         local_workset.append(u)
@@ -169,6 +236,158 @@ class LandmarksAStarOnedirectional:
         #print(list(reversed(path)))
         #return int(round(self.dist[0][target] - potential))
         return int(round(self.dist[0][target] - potential))
+
+
+class LandmarksAStarBidirectional:
+    def __init__(self, n, m, adj, cost, x, y):
+        self.n = n                              # Number of nodes
+        self.m = m
+        self.adj = adj
+        self.cost = cost
+        self.inf = n*10**6                      # All distances in the graph are smaller
+        self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
+        self.visited = [[False]*n, [False]*n]      # visited[v] == True iff v was visited by forward or backward search
+        self.workset = []                       # All the nodes visited by forward or backward search
+        self.parent = [[None]*n, [None]*n]      # Used for backtracking
+        self.x = x
+        self.y = y
+
+        nodes = self.read_landmark_nodes()
+        print('Preprocessing landmarks', nodes)
+        self.landmarks = LandmarksHeuristic(n, m, adj, cost, nodes)
+        print('Preprocessed %s landmarks' % len(nodes))
+
+    def read_landmark_nodes(self):
+        #with open('untracked/astar/landmarks.usa-road.10k.txt') as file_:
+        with open('untracked/astar/landmarks.usa-road.txt') as file_:
+            nodes = list(map(int, file_.readlines()))
+            # count = int(file_.readline().strip())
+            # for _ in range(count):
+            #     nodes = [int(x) for x in file_.readline().strip().split()]
+        return nodes
+
+    def clear(self):
+        """Reinitialize the data structures for the next query after the previous query."""
+        for v in self.workset:
+            self.dist[0][v] = self.dist[1][v] = self.inf
+            #self.parent[0][v] = self.parent[1][v] = None
+            self.visited[0][v] = self.visited[1][v] = False
+        self.workset = []
+
+    def query(self, source, target):
+        if source == target:
+            return 0
+
+        self.clear()
+        queue = [PriorityQueue(), PriorityQueue()]
+
+        self.dist[0][source] = self.dist[1][target] = 0
+        queue[0].put((0, source))
+        queue[1].put((0, target))
+
+        while not queue[0].empty() or not queue[1].empty():
+            dist = self.do_iteration(queue, 0, source, target)
+            if dist is not None:
+                return dist
+
+            dist = self.do_iteration(queue, 1, source, target)
+            if dist is not None:
+                return dist
+
+        return -1
+
+    def do_iteration(self, queue, side, source, target):
+        if queue[side].empty():
+            return None
+        _, u = queue[side].get()
+
+        self.visit(queue, side, u, source, target)
+
+        other_side = 1 - side
+        if self.visited[other_side][u]:
+            return self.get_shortest_path(side, source, target)
+
+        return None
+
+    def p(self, side, u, source, target):
+        dist_u_target = (self.x[u] - self.x[target]) ** 2 + (self.y[u] - self.y[target]) ** 2
+        dist_source_u = (self.x[source] - self.x[u]) ** 2 + (self.y[source] - self.y[u]) ** 2
+
+        pi_f = sqrt(dist_u_target)
+        pi_r = sqrt(dist_source_u)
+
+        pi_f = self.landmarks.dist(u, target, pi_f)
+        pi_r = self.landmarks.dist(source, u, pi_r)
+
+        result = (pi_f - pi_r) / 2.
+        result *= (1 - side) + -1 * side # equivalent of 1. if side == 0 else -1.
+        return result
+
+    def visit(self, queue, side, u, source, target):
+        local_adj = self.adj
+        local_cost = self.cost
+        local_dist = self.dist
+        local_parent = self.parent
+        local_workset = self.workset
+        # local_x = self.x
+        # local_y = self.y
+
+        neighbors = local_adj[side][u]
+
+        for v_index, v in enumerate(neighbors):
+            print(v, file=sys.stderr)
+            potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
+            edge_weight = local_cost[side][u][v_index] + potential
+            alt = local_dist[side][u] + edge_weight
+
+            if alt < local_dist[side][v]:
+                local_dist[side][v] = alt
+                local_parent[side][v] = u
+                queue[side].put((alt, v))
+                local_workset.append(v)
+
+        self.visited[side][u] = True
+        local_workset.append(u)
+
+    def get_shortest_path(self, side, source, target):
+        dist = self.inf
+        u_best = -1
+
+        for u in self.workset:
+            candidate_dist = self.dist[0][u] + self.dist[1][u]
+            if candidate_dist < dist:
+                u_best = u
+                dist = candidate_dist
+
+        # path = []
+        # last = u_best
+        #
+        # while last != source:
+        #     path.append(last)
+        #     last = self.parent[0][last]
+        # path.reverse()
+        #
+        # last = u_best
+        # while last != target:
+        #     last = self.parent[1][last]
+        #     path.append(last)
+
+        # dist_source_target = (self.x[source] - self.x[target]) ** 2 + (self.y[source] - self.y[target]) ** 2
+        #dist_target_target = (self.x[target] - self.x[target]) ** 2 + (self.y[target] - self.y[target]) ** 2
+        # potential = -sqrt(dist_source_target) #+ dist_target_target
+
+        #print(list(reversed(path)))
+        #jreturn self.dist[0][target] - self.potential(source, target, source, target)
+        #return int(round(self.dist[0][target] - potential))
+
+        u = source
+        v = target
+
+        potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
+        potential *= (1 - side) + -1 * side # equivalent of 1. if side == 0 else -1.
+
+        return int(round(dist - potential))
+
 
 
 def readl():
@@ -219,6 +438,8 @@ def main():
 
     if alg == 'laone':
         astar = LandmarksAStarOnedirectional(n, m, adj, cost, x, y)
+    elif alg == 'ladi':
+        astar = LandmarksAStarBidirectional(n, m, adj, cost, x, y)
     elif alg == 'bfs':
         astar = BreadthFirstSearchOneToAll(n, m, adj, cost)
     # elif alg == 'abi':
