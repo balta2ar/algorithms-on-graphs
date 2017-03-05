@@ -54,9 +54,6 @@ class DijkstraOnedirectional:
         """
         neighbors = self.adj[0][u]
         for v_index, v in enumerate(neighbors):
-            # if self.visited[v]:
-            #     continue
-
             print(v, file=sys.stderr)
             alt = self.dist[0][u] + self.cost[0][u][v_index]
 
@@ -64,6 +61,7 @@ class DijkstraOnedirectional:
                 self.dist[0][v] = alt
                 #self.parent[0][v] = u
                 queue[0].put((alt, v))
+                self.workset.append(v)
 
         self.visited[u] = True
         self.workset.append(u)

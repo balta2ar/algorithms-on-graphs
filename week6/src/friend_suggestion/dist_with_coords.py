@@ -78,7 +78,7 @@ class AStarOnedirectional:
                 local_dist[0][v] = alt
                 #local_parent[0][v] = u
                 queue[0].put((alt, v))
-                #local_workset.append(v)
+                local_workset.append(v)
 
         self.visited[u] = True
         local_workset.append(u)

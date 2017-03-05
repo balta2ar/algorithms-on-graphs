@@ -7,6 +7,7 @@ from friend_suggestion import DijkstraBidirectional
 from dist_with_coords import AStarOnedirectional
 from dist_with_coords import AStarBidirectional
 from landmarks import BreadthFirstSearchOneToAll
+from dijkstra import ReferenceDijkstra
 
 
 def readl():
@@ -40,11 +41,12 @@ def main():
     t, = readl()
 
     algs = [
-        ('DijkstraOne', DijkstraOnedirectional(n, m, adj, cost)),
-        ('DijkstraBi', DijkstraBidirectional(n, m, adj, cost)),
+        ('DijkOne', DijkstraOnedirectional(n, m, adj, cost)),
+        ('DijkBi', DijkstraBidirectional(n, m, adj, cost)),
         ('AStarOne', AStarOnedirectional(n, m, adj, cost, x, y)),
         ('AStarBi', AStarBidirectional(n, m, adj, cost, x, y)),
         ('BFS', BreadthFirstSearchOneToAll(n, m, adj, cost)),
+        # ('RefDijk', ReferenceDijkstra(n, m, adj, cost)),
     ]
 
     template = '%15s'
@@ -54,7 +56,7 @@ def main():
     for _ in range(t):
         s, t = readl()
         results = [alg.query(s-1, t-1) for name, alg in algs]
-        mismatch = '' if len(set(results)) == 1 else 'MISMATCH'
+        mismatch = 'MISMATCH' if len(set(results)) > 1 else ''
         results = [template % mismatch] + [template % result for result in results]
         print(''.join(results))
         #print(astar.query(s-1, t-1))
