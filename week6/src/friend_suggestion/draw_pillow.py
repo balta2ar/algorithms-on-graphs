@@ -1,7 +1,7 @@
 import sys
 import argparse
 import numpy as np
-from os.path import basename
+from os.path import basename, dirname
 
 
 def draw_graph_pillow(visited, coordinates, output):
@@ -91,7 +91,7 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
 
     #w = h = 0.3
     #offset = 0.15
-    w = h = max(dw, dh) / 100.
+    w = h = max(dw, dh) / 500.
     offset = w / 2.
     text_offset = offset * 2
     print('circle w h %s offset %s' % (w, offset))
@@ -176,7 +176,7 @@ def draw_graph_cairo(input_graph, visited_filename, coordinates, output, size):
             i += 1
             #if i > 10:
             #    break
-        visited_output = basename(output).rsplit('.', 1)[0] + '.visited.png'
+        visited_output = dirname(output) + '/' + basename(output).rsplit('.', 1)[0] + '.visited.png'
         print('Writing to %s' % visited_output)
         surface.write_to_png(visited_output)
 
