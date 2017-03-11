@@ -137,3 +137,51 @@ Preprocessed 4 landmarks
     <time>   5.89068   0.42396   0.50478   0.00812   0.00171   0.00143   0.00324
 pypy3 stress.py --random-queries 0 --profile --hide-results <  2> /dev/null  187.72s user 0.33s system 96% cpu 3:15.31 total
 
+## QUERY EXECUTION TIMES (python3)
+
+22:45:26 bz.boltx64 » friend_suggestion 1 → time python stress.py --random-queries 0 --profile --hide-results < test_astar/usa-road.in 2>/dev/null
+Preprocessing landmarks [4362, 58197, 79224, 191500]
+Loaded landmarks from untracked/astar/landmarks.pkl.cache
+Preprocessed 4 landmarks
+Preprocessing landmarks [4362, 58197, 79224, 191500]
+Loaded landmarks from untracked/astar/landmarks.pkl.cache
+Preprocessed 4 landmarks
+             DijkOne  AStarOne    ALTOne    DijkBi   AStarBi     ALTBi    s -> t
+    <time>   3.29817   5.90689   0.59001   2.17007   1.20313   0.38343
+    <time>   3.56023   6.02202   0.02089   0.18924   0.04630   0.02870
+    <time>   3.48593   5.96014   0.02705   0.01701   0.01017   0.03909
+    <time>   3.69461   6.21951   0.00608   0.02138   0.00817   0.01095
+    <time>   3.56918   6.08143   0.01821   0.05103   0.02893   0.06390
+    <time>   3.60630   5.98832   0.04233   0.06175   0.03218   0.09057
+    <time>   3.48395   6.13712   0.01294   0.00907   0.00756   0.02220
+    <time>   3.61572   6.03906   0.03160   0.01882   0.01514   0.03970
+    <time>   3.60616   6.12585   0.02355   0.01299   0.01137   0.01662
+    <time>   3.54513   6.02290   0.02299   0.01184   0.01186   0.01414
+    <time>   3.59005   5.96956   0.05239   0.03131   0.03339   0.11409
+    <time>   3.86084   6.15363   0.02294   0.01325   0.01375   0.03052
+    <time>   3.61615   6.42196   0.00203   0.00415   0.00507   0.00413
+    <time>   3.60794   6.23503   0.02634   0.01088   0.01494   0.03590
+    <time>   3.65207   5.95767   0.05993   0.02009   0.02736   0.06209
+    <time>   3.52844   5.96569   0.01038   0.04458   0.01207   0.02518
+    <time>   3.47280   6.06822   0.02712   0.01699   0.01006   0.03852
+    <time>   3.54563   6.17544   0.00633   0.02132   0.00827   0.01098
+    <time>   3.48593   6.08244   0.02299   0.05029   0.02920   0.06476
+    <time>   3.65566   5.94825   0.04266   0.07974   0.02821   0.07630
+    <time>   3.56973   6.08153   0.01148   0.00875   0.00750   0.02182
+    <time>   3.58013   5.95234   0.03163   0.01878   0.01484   0.03948
+    <time>   3.52974   5.88012   0.02834   0.01291   0.01213   0.01755
+    <time>   3.76956   5.99531   0.02397   0.01135   0.01219   0.01445
+    <time>   3.64149   5.99532   0.04724   0.02938   0.03349   0.11341
+    <time>   3.65184   6.03642   0.02300   0.01295   0.01325   0.03116
+    <time>   3.70621   6.13181   0.00200   0.00397   0.00485   0.00396
+    <time>   3.48021   6.38780   0.02739   0.01114   0.01524   0.03564
+    <time>   3.54207   6.16315   0.07558   0.03094   0.03011   0.06728
+    <time>   3.58193   6.09605   0.02676   0.04568   0.02221   0.03079
+             DijkOne  AStarOne    ALTOne    DijkBi   AStarBi     ALTBi    s -> t
+python stress.py --random-queries 0 --profile --hide-results <  2> /dev/null  289.49s user 0.37s system 96% cpu 5:00.32 total
+
+## WHYS
+
+1. Why in Onedirectional Dijkstra and Onedirectional AStar in certain queries
+  vertices are visited many times.
+  Bad edge lengths?
