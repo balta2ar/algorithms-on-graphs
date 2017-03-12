@@ -17,16 +17,23 @@ def main():
     filename = sys.argv[1]
     path_filename = sys.argv[2]
     print('digraph %s {' % filename.replace('.', '_').replace('-', '_'))
-    print('edge [len=2];')
+    print('''
+splines=true;
+sep="+25,25";
+overlap=scalexy;
+nodesep=0.6;
+node [fontsize=12 arrowsize=0.1];
+edge [fontsize=8 arrowsize=0.6 len=2];
+''')
     path = set(pairwise(get_path(path_filename)))
 
     with open(filename) as file:
         nv, ne = file.readline().strip().split()
         nv, ne = int(nv), int(ne)
 
-        for i in range(ne):
+        for _ in range(ne):
             u, v, c = file.readline().strip().split()
-            color = "red" if (int(u), int(v)) in path else "black"
+            color = "#FF0000A0" if (int(u), int(v)) in path else "#00000030"
             print('    %s -> %s [label="%s" color="%s"];' % (u, v, c, color))
 
     print('}')

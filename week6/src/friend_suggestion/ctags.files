@@ -7,6 +7,7 @@ randomized_queries.py
 test-cairo.py
 friend_suggestion.py
 dist_with_coords.py
+dist_preprocess_small.py
 
 unittest.cpp
 friend_suggestion.cpp

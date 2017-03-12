@@ -305,7 +305,7 @@ class LandmarksAStarBidirectional:
 
         other_side = 1 - side
         if self.visited[other_side][u]:
-            return self.get_shortest_path(side, source, target)
+            return self.backtrack(side, source, target)
 
         return None
 
@@ -349,7 +349,7 @@ class LandmarksAStarBidirectional:
         self.visited[side][u] = True
         local_workset.append(u)
 
-    def get_shortest_path(self, side, source, target):
+    def backtrack(self, side, source, target):
         dist = self.inf
         u_best = -1
 

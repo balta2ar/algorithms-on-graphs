@@ -158,7 +158,7 @@ class AStarBidirectional:
 
         other_side = 1 - side
         if self.visited[other_side][u]:
-            return self.get_shortest_path(side, source, target)
+            return self.backtrack(side, source, target)
 
         return None
 
@@ -199,7 +199,7 @@ class AStarBidirectional:
         self.visited[side][u] = True
         local_workset.append(u)
 
-    def get_shortest_path(self, side, source, target):
+    def backtrack(self, side, source, target):
         dist = self.inf
         u_best = -1
 
@@ -319,7 +319,7 @@ def main():
 
     t, = readl()
 
-    alg = 'abi'
+    alg = 'aone'
     if len(sys.argv) > 1:
         alg = sys.argv[1]
 

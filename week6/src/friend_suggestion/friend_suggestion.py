@@ -8,16 +8,16 @@ from queue import PriorityQueue
 
 
 class DijkstraOnedirectional:
-    def __init__(self, n, m, adj, cost):
+    def __init__(self, n, m, adj, cost, _x=None, _y=None):
         self.n = n                              # Number of nodes
         self.m = m
         self.adj = adj
         self.cost = cost
-        self.inf = n*10**6                      # All distances in the graph are smaller
-        self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
-        self.visited = [False]*n                  # visited[v] == True iff v was visited by forward or backward search
-        self.workset = []                       # All the nodes visited by forward or backward search
-        self.parent = [[None]*n, [None]*n]      # Used for backtracking
+        self.inf = n*10**6                       # All distances in the graph are smaller
+        self.dist = [[self.inf]*n, [self.inf]*n] # Initialize distances for forward and backward searches
+        self.visited = [False]*n                 # visited[v] == True iff v was visited by forward or backward search
+        self.workset = []                        # All the nodes visited by forward or backward search
+        self.parent = [[None]*n, [None]*n]       # Used for backtracking
 
     def clear(self):
         """
@@ -25,7 +25,7 @@ class DijkstraOnedirectional:
         """
         for v in self.workset:
             self.dist[0][v] = self.dist[1][v] = self.inf
-            #self.parent[0] = self.parent[1] = None
+            self.parent[0] = self.parent[1] = None
             self.visited[v] = False
         self.workset = []
 
@@ -59,7 +59,7 @@ class DijkstraOnedirectional:
 
             if alt < self.dist[0][v]:
                 self.dist[0][v] = alt
-                #self.parent[0][v] = u
+                self.parent[0][v] = u
                 queue[0].put((alt, v))
                 self.workset.append(v)
 
@@ -67,15 +67,16 @@ class DijkstraOnedirectional:
         self.workset.append(u)
 
     def backtrack(self, source, target):
-        # path = []
+        path = []
 
-        # current = target
-        # while current != source:
-        #     path.append(current)
-        #     current = self.parent[0][current]
-        # path.append(current)
+        current = target
+        while current != source:
+            path.append(current)
+            current = self.parent[0][current]
+        path.append(current)
 
         #print(list(reversed(path)))
+        print(' '.join(map(lambda x: str(x+1), reversed(path))))
         return self.dist[0][target]
 
 
@@ -83,16 +84,16 @@ class DijkstraOnedirectional:
 
 
 class DijkstraBidirectional:
-    def __init__(self, n, m, adj, cost):
+    def __init__(self, n, m, adj, cost, _x=None, _y=None):
         self.n = n                              # Number of nodes
         self.m = m
         self.adj = adj
         self.cost = cost
-        self.inf = n*10**6                      # All distances in the graph are smaller
-        self.dist = [[self.inf]*n, [self.inf]*n]   # Initialize distances for forward and backward searches
-        self.visited = [[False]*n, [False]*n]      # visited[v] == True iff v was visited by forward or backward search
-        self.workset = []                       # All the nodes visited by forward or backward search
-        self.parent = [[None]*n, [None]*n]      # Used for backtracking
+        self.inf = n*10**6                       # All distances in the graph are smaller
+        self.dist = [[self.inf]*n, [self.inf]*n] # Initialize distances for forward and backward searches
+        self.visited = [[False]*n, [False]*n]    # visited[v] == True iff v was visited by forward or backward search
+        self.workset = []                        # All the nodes visited by forward or backward search
+        self.parent = [[None]*n, [None]*n]       # Used for backtracking
 
     def clear(self):
         """Reinitialize the data structures for the next query after the previous query."""
@@ -132,7 +133,7 @@ class DijkstraBidirectional:
 
         other_side = 1 - side
         if self.visited[other_side][u]:
-            return self.get_shortest_path(source, target)
+            return self.backtrack(source, target)
 
         return None
 
@@ -158,7 +159,7 @@ class DijkstraBidirectional:
         self.visited[side][u] = True
         local_workset.append(u)
 
-    def get_shortest_path(self, source, target):
+    def backtrack(self, source, target):
         dist = self.inf
         u_best = -1
 
@@ -168,19 +169,21 @@ class DijkstraBidirectional:
                 u_best = u
                 dist = candidate_dist
 
-        # path = []
-        # last = u_best
-        #
-        # while last != source:
-        #     path.append(last)
-        #     last = self.parent[0][last]
-        # path.reverse()
-        #
-        # last = u_best
-        # while last != target:
-        #     last = self.parent[1][last]
-        #     path.append(last)
+        path = []
+        last = u_best
 
+        while last != source:
+            path.append(last)
+            last = self.parent[0][last]
+        path.append(last)
+        path.reverse()
+
+        last = u_best
+        while last != target:
+            last = self.parent[1][last]
+            path.append(last)
+
+        print(' '.join(map(lambda x: str(x+1), path)))
         return dist
 
 
@@ -209,7 +212,7 @@ def main():
     n, m, adj, cost = read_from_stdin()
     t, = readl()
 
-    alg = 'bi'
+    alg = 'one'
     if len(sys.argv) > 1:
         alg = sys.argv[1]
 

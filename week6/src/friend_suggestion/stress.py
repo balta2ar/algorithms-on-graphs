@@ -117,7 +117,7 @@ def main():
     t, = readl()
 
     algs = [
-        ('BFS', BreadthFirstSearchOneToAll(n, m, adj, cost)),
+        #('BFS', BreadthFirstSearchOneToAll(n, m, adj, cost)),
         ('DijkOne', DijkstraOnedirectional(n, m, adj, cost)),
         ('AStarOne', AStarOnedirectional(n, m, adj, cost, x, y)),
         ('ALTOne', LandmarksAStarOnedirectional(n, m, adj, cost, x, y)),
