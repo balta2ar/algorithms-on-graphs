@@ -144,10 +144,16 @@ class LandmarksAStarOnedirectional:
         self.x = x
         self.y = y
 
-        nodes = self.read_landmark_nodes()
+        #nodes = self.read_landmark_nodes()
+        nodes = self.pick_landmark_nodes()
         print('Preprocessing landmarks', nodes)
         self.landmarks = LandmarksHeuristic(n, m, adj, cost, nodes)
         print('Preprocessed %s landmarks' % len(nodes))
+
+    def pick_landmark_nodes(self):
+        sorted_x = sorted(enumerate(self.x), key=lambda x: x[1])
+        sorted_y = sorted(enumerate(self.y), key=lambda x: x[1])
+        return [sorted_x[0][0], sorted_x[-1][0], sorted_y[0][0], sorted_y[-1][0]]
 
     def read_landmark_nodes(self):
         #with open('untracked/astar/landmarks.usa-road.10k.txt') as file_:
@@ -335,7 +341,7 @@ class LandmarksAStarBidirectional:
         neighbors = local_adj[side][u]
 
         for v_index, v in enumerate(neighbors):
-            print(v, file=sys.stderr)
+            #print(v, file=sys.stderr)
             potential = -self.p(side, u, source, target) + self.p(side, v, source, target)
             edge_weight = local_cost[side][u][v_index] + potential
             alt = local_dist[side][u] + edge_weight

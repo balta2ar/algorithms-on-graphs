@@ -25,7 +25,7 @@ class DijkstraOnedirectional:
         """
         for v in self.workset:
             self.dist[0][v] = self.dist[1][v] = self.inf
-            self.parent[0] = self.parent[1] = None
+            #self.parent[0][v] = self.parent[1][v] = None
             self.visited[v] = False
         self.workset = []
 
@@ -38,9 +38,12 @@ class DijkstraOnedirectional:
 
         self.dist[0][source] = 0
         queue[0].put((0, source))
+        self.visited[source] = True
 
         while not queue[0].empty():
             _, u = queue[0].get()
+            # if u == target:
+            #     return self.backtrack(source, target)
             self.visit(queue, u)
 
         if self.dist[0][target] != self.inf:
@@ -52,19 +55,22 @@ class DijkstraOnedirectional:
         """
         Try to relax the distance to node u from direction side by value dist.
         """
+        #self.visited[u] = True
         neighbors = self.adj[0][u]
         for v_index, v in enumerate(neighbors):
-            #print(v, file=sys.stderr)
             alt = self.dist[0][u] + self.cost[0][u][v_index]
 
             if alt < self.dist[0][v]:
                 self.dist[0][v] = alt
                 self.parent[0][v] = u
-                queue[0].put((alt, v))
                 self.workset.append(v)
+                # if not self.visited[v]:
+                queue[0].put((alt, v))
+                    # self.visited[v] = True
 
-        self.visited[u] = True
         self.workset.append(u)
+        self.visited[u] = True
+        #print(u, file=sys.stderr)
 
     def backtrack(self, source, target):
         path = []
@@ -76,7 +82,7 @@ class DijkstraOnedirectional:
         path.append(current)
 
         #print(list(reversed(path)))
-        print(' '.join(map(lambda x: str(x+1), reversed(path))))
+        #print(' '.join(map(lambda x: str(x+1), reversed(path))))
         return self.dist[0][target]
 
 
@@ -158,6 +164,7 @@ class DijkstraBidirectional:
 
         self.visited[side][u] = True
         local_workset.append(u)
+        #print(u, file=sys.stderr)
 
     def backtrack(self, source, target):
         dist = self.inf
@@ -183,7 +190,7 @@ class DijkstraBidirectional:
             last = self.parent[1][last]
             path.append(last)
 
-        print(' '.join(map(lambda x: str(x+1), path)))
+        #print(' '.join(map(lambda x: str(x+1), path)))
         return dist
 
 

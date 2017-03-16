@@ -2,6 +2,7 @@
 
 
 import sys
+import pickle
 from queue import PriorityQueue
 from collections import deque
 from itertools import product
@@ -28,6 +29,7 @@ class _DijkstraOnedirectionalWitnessSearch:
         self.dist = [self.inf]*n                 # Initialize distances for forward and backward searches
         #self.visited = [False]*n                 # visited[v] == True iff v was visited by forward or backward search
         self.workset = []                        # All the nodes visited by forward or backward search
+        self.parent = [None]*n
         # These vertices are coming from parent class. After a vertice
         # is contracted, Dijkstra should ignore it in the search.
         self.contracted = contracted
@@ -37,7 +39,8 @@ class _DijkstraOnedirectionalWitnessSearch:
         Reinitialize the data structures for the next query after the previous query.
         """
         for v in self.workset:
-            self.dist[v] = self.dist[v] = self.inf
+            self.dist[v] = self.inf
+            #self.dist[v] = self.dist[v] = self.inf
             #self.visited[v] = False
         self.workset = []
 
@@ -54,6 +57,7 @@ class _DijkstraOnedirectionalWitnessSearch:
 
         self.dist[source] = 0
         queue.put((0, source))
+        self.parent[source] = None
 
         while not queue.empty():
             _, u = queue.get()
@@ -81,27 +85,31 @@ class _DijkstraOnedirectionalWitnessSearch:
                 self.dist[v] = alt
                 queue.put((alt, v))
                 self.workset.append(v)
+                self.parent[v] = u
 
         #self.visited[u] = True
         self.workset.append(u)
 
-    # def backtrack(self, source, target):
-    #     # path = []
-    #
-    #     # current = target
-    #     # while current != source:
-    #     #     path.append(current)
-    #     #     current = self.parent[0][current]
-    #     # path.append(current)
-    #
-    #     #print(list(reversed(path)))
-    #     return self.dist[target]
+    def backtrack(self, source, target):
+        path = []
+
+        current = target
+        while current != source:
+            path.append(current)
+            current = self.parent[current]
+        path.append(current)
+
+        #print('witness path', list(reversed(path)))
+        #return self.dist[target]
+        return list(reversed(path))
 
 
 #Shortcut = namedtuple('Shortcut', 'u v w cost')
 
 
 class DistPreprocessSmall:
+    CACHE_FILENAME = 'untracked/astar/ch.pkl.cache'
+
     def __init__(self, n, m, adj, cost, _x=None, _y=None):
         # See description of these parameters in the starter for friend_suggestion
         self.n = n
@@ -129,6 +137,14 @@ class DistPreprocessSmall:
             n, m, adj, cost, self.visited[0])
         self.preprocess()
 
+        # cached_cost = self.load_cache()
+        # if cached_cost is None:
+        #     #self.cost = self.pre
+        #     self.preprocess()
+        #     self.save_cache(self.cost)
+        # else:
+        #     self.cost = cached_cost
+
     def save_to_file(self, filename):
         with open(filename, 'w') as file_:
             m = self.m + len(self.shortcuts)
@@ -136,6 +152,26 @@ class DistPreprocessSmall:
             for u, vs in enumerate(self.adj[0]):
                 for v_index, v in enumerate(vs):
                     file_.write('%s %s %s\n' % (u+1, v+1, self.cost[0][u][v_index]))
+
+    def load_cache(self):
+        try:
+            costs = []
+            with open(DistPreprocessSmall.CACHE_FILENAME, 'rb') as cache_:
+                costs = pickle.load(cache_)
+                # for line in cache_:
+                #     landmark = [int(x) for x in line.strip().split()]
+                #     costs.append(landmark)
+            print('Loaded CH edges from %s' % DistPreprocessSmall.CACHE_FILENAME)
+            return costs
+        except IOError:
+            return None
+
+    def save_cache(self, obj):
+        with open(DistPreprocessSmall.CACHE_FILENAME, 'wb') as cache_:
+            pickle.dump(obj, cache_, pickle.HIGHEST_PROTOCOL)
+            # for landmark in self.costs:
+            #     line = ' '.join(map(str, landmark))
+            #     cache_.write('%s\n' % line)
 
     # --- PREPROCESSING PART --------------------------------------------------
 
@@ -147,11 +183,12 @@ class DistPreprocessSmall:
         Output: augmented graph + node order.
         """
         for u in range(self.n):
-            _logger.info('contract %s', u)
+            #_logger.info('contract %s', u)
             self.contract(u)
+            #self.save_to_file('untracked/contracted-step%s.in' % u)
 
         from pprint import pformat
-        _logger.info('shortcuts: %s', pformat(self.shortcuts))
+        #_logger.info('shortcuts: %s', pformat(self.shortcuts))
 
     def contract(self, v):
         # outgoing_nodes = self.adj[0][v]
@@ -161,19 +198,30 @@ class DistPreprocessSmall:
         #    Witness search: run one directional Dijkstra from each predecessor
         #    (no target, limit max cost, limit number of hops)
         max_witness_path_cost = self.get_max_witness_path_cost(v)
+        new_shortcuts = dict()
         for (u_index, u), (w_index, w) in self.iter_candidates(v):
 
-            _logger.info('doing witness search (%s,%s) max=%s', u, w, max_witness_path_cost)
+            #_logger.info('doing witness search (%s,%s) max=%s', u, w, max_witness_path_cost)
             witness_path_cost = self.witness_searcher.query(u, w, v, max_witness_path_cost)
             if witness_path_cost == -1:
                 u_w_cost = self.cost[1][v][u_index] + self.cost[0][v][w_index]
-                _logger.info('adding arc (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
-                self.add_arc(u, w, u_w_cost)
-                self.shortcuts[(u, w)] = (v, u_w_cost)
+                #_logger.info('adding arc (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
+
+                new_shortcuts[(u, w)] = (v, u_w_cost)
+                # self.add_arc(u, w, u_w_cost)
+                # self.shortcuts[(u, w)] = (v, u_w_cost)
+
                 #self.shortcuts.append(Shortcut(u, v, w, u_w_cost))
             else:
-                _logger.info('found witness path of cost %s for (%s,%s), max=%s',
-                             witness_path_cost, u, w, max_witness_path_cost)
+                pass
+                #witness_path = self.witness_searcher.backtrack(u, w)
+                #_logger.info('found witness path %s of cost %s for (%s,%s), max=%s',
+                #             witness_path, witness_path_cost, u, w, max_witness_path_cost)
+
+        for (u, w), (v, u_w_cost) in new_shortcuts.items():
+            self.add_arc(u, w, u_w_cost)
+            self.shortcuts[(u, w)] = (v, u_w_cost)
+
         self.mark_visited(v)
         self.rank.append(v)
         self.level[v] = self.counter
@@ -258,7 +306,7 @@ class DistPreprocessSmall:
         #self.visited = [False] * self.n
 
     def query(self, source, target):
-        _logger.info('query %s -> %s', source, target)
+        #_logger.info('query %s -> %s', source, target)
         if source == target:
             return 0
 
@@ -275,8 +323,9 @@ class DistPreprocessSmall:
             self.do_iteration(queue, 1)
 
         result = -1 if self.estimate == self.inf else self.estimate
-        _logger.info('query %s -> %s result %s', source, target, result)
-        self.backtrack(source, target)
+        #_logger.info('query %s -> %s result %s', source, target, result)
+        if result != -1:
+            self.backtrack(source, target)
         return result
 
     def do_iteration(self, queue, side):
@@ -320,16 +369,21 @@ class DistPreprocessSmall:
             # _logger.info('alt u v %s %s = %s', u, v, alt)
 
             if alt < local_dist[side][v]:
-                _logger.info('new alt %s for u v %s %s side %s', alt, u, v, side)
+                #_logger.info('new alt %s for u v %s %s side %s', alt, u, v, side)
                 local_dist[side][v] = alt
                 local_parent[side][v] = u
                 queue[side].put((alt, v))
                 local_workset.append(v)
+                self.parent[side][v] = u
 
         self.visited[side][u] = True
         local_workset.append(u)
 
+    def _human_path(self, path):
+        return ' '.join(map(lambda x: str(x+1), path))
+
     def backtrack(self, source, target):
+        #print('backtrack', source, target)
         # path = []
         #
         # current = target
@@ -359,19 +413,21 @@ class DistPreprocessSmall:
             last = self.parent[0][last]
         path.append(last)
         path.reverse()
-        print('path first part', path)
+        # print('path first part', self._human_path(path))
 
         last = u_best
         while last != target:
             last = self.parent[1][last]
             path.append(last)
+        # print('path first+last part', self._human_path(path))
 
         path = self.expand_shortcuts(path)
-        print(' '.join(map(lambda x: str(x+1), path)))
+        #print(' '.join(map(lambda x: str(x+1), path)))
+        # print(self._human_path(path))
         return dist
 
     def expand_shortcuts(self, path):
-        print('path before expansion', path)
+        # print('path before expansion', self._human_path(path))
         if len(path) == 1:
             return path
 
@@ -395,7 +451,7 @@ class DistPreprocessSmall:
                 # print('result', result)
         result.append(queue.popleft())
 
-        print('path after expansion', result)
+        # print('path after expansion', self._human_path(result))
         return result
 
 

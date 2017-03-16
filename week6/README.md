@@ -57,6 +57,12 @@ algorithms.
   source == target.
 
 
+[_] one-to-one: u = queue.get(), compare with target (one onedirectional)
+    one-to-all: run until queue is empty
+
+[_] CH: while contracting, buffer new shortcuts and add in the end
+
+
 ## QUERY RESULTS
 
 22:20:54 bz.boltx64 » friend_suggestion 1 → time pypy3 stress.py --random-queries 0 < test_astar/usa-road.in 2>/dev/null 
@@ -185,3 +191,9 @@ python stress.py --random-queries 0 --profile --hide-results <  2> /dev/null  28
 1. Why in Onedirectional Dijkstra and Onedirectional AStar in certain queries
   vertices are visited many times.
   Bad edge lengths?
+
+[_] is visited essential for one-directional? for bi-directional?
+
+[_] CH: mistake in heuristic: max max?
+
+[_] does not work with levels
