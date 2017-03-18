@@ -71,7 +71,7 @@ class TestDistPreprocessSmall(unittest.TestCase):
         expected = read_lines_from_file(output_filename)
         self.assertEqual(expected, actual)
 
-        self._check_all_queries(input_filename, output_filename)
+        # self._check_all_queries(input_filename, output_filename)
 
     def _check_all_queries(self, input_filename, output_filename):
         n, m, adj, cost, x, y = read_graph_from_file(input_filename)
@@ -105,11 +105,11 @@ class TestDistPreprocessSmall(unittest.TestCase):
     def test_case2(self):
         self._compare('test_astar/case2.in', 'test_astar/case2.out')
 
-    # def test_case3(self):
-    #     self._compare('test_astar/case3.in', 'test_astar/case3.out')
+    def test_case3(self):
+        self._compare('test_astar/case3.in', 'test_astar/case3.out')
 
-    def test_gen10(self):
-        self._compare('test_astar/gen10.in', 'test_astar/gen10.out')
+    # def test_gen10(self):
+    #     self._compare('test_astar/gen10.in', 'test_astar/gen10.out')
 
     # def test_gen100(self):
     #     self._compare('test_astar/gen100.in', 'test_astar/gen100.out')
