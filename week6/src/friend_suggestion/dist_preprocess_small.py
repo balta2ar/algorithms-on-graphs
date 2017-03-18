@@ -187,7 +187,7 @@ class DistPreprocessSmall:
             self.contract(u)
             #self.save_to_file('untracked/contracted-step%s.in' % u)
 
-        from pprint import pformat
+        #from pprint import pformat
         #_logger.info('shortcuts: %s', pformat(self.shortcuts))
 
     def contract(self, v):
@@ -424,7 +424,7 @@ class DistPreprocessSmall:
         path = self.expand_shortcuts(path)
         #print(' '.join(map(lambda x: str(x+1), path)))
         # print(self._human_path(path))
-        return dist
+        return dist, path
 
     def expand_shortcuts(self, path):
         # print('path before expansion', self._human_path(path))

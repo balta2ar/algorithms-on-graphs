@@ -47,7 +47,8 @@ class DijkstraOnedirectional:
             self.visit(queue, u)
 
         if self.dist[0][target] != self.inf:
-            return self.backtrack(source, target)
+            dist, _path = self.backtrack(source, target)
+            return dist
 
         return -1
 
@@ -80,10 +81,12 @@ class DijkstraOnedirectional:
             path.append(current)
             current = self.parent[0][current]
         path.append(current)
+        path.reverse()
 
         #print(list(reversed(path)))
         #print(' '.join(map(lambda x: str(x+1), reversed(path))))
-        return self.dist[0][target]
+        #print('%s %s path in backtrack %s ' % (source, target, path))
+        return self.dist[0][target], path
 
 
 # -----------------------------------------------------------------------------

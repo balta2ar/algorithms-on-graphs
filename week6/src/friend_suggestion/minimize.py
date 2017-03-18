@@ -85,27 +85,41 @@ class GraphMinimizer(object):
             self._eliminate_edges()
             self._remove_isolated_nodes()
 
-            self._verify()
+            mismatch, a_dist, a_path, b_dist, b_path = self._verify()
+            print('verify results', mismatch, a_dist, a_path, 's t', self.s, self.t)
+            if not mismatch and a_dist > 0 and len(a_path) > 2:
+                self._shorten_path(a_path)
+                self._verify()
             # time.sleep(0.5)
 
     def _verify(self):
-        if self._is_mismatch():
+        mismatch, a_dist, a_path, b_dist, b_path = self._is_mismatch()
+        if mismatch:
             self._save()
         else:
             self._restore()
+        return mismatch, a_dist, a_path, b_dist, b_path
 
     def _is_mismatch(self):
+        if self.s == self.t:
+            return False, -1, [], -1, []
+
+        print('is_mismatch s t', self.s, self.t)
         dijk = DijkstraOnedirectional(self.n, self.m, self.adj,
                                       deepcopy(self.cost), None, None)
-        a = dijk.query(self.s-1, self.t-1)
-        print('a = %s' % a)
+        a_dist = dijk.query(self.s-1, self.t-1)
+        #print('a_dist after query %s' % a_dist)
+        _, a_path = dijk.backtrack(self.s-1, self.t-1) if a_dist != -1 else (None, [])
+        print('is_mismatch a_dist = %s, a_path = %s' % (a_dist, a_path))
         ch = DistPreprocessSmall(self.n, self.m, deepcopy(self.adj),
                                  deepcopy(self.cost), None, None)
-        b = ch.query(self.s-1, self.t-1)
-        print('b = %s' % b)
-        result = a < b
-        print('is_mismatch %s' % result)
-        return result
+        b_dist = ch.query(self.s-1, self.t-1)
+        print('is_mismatch b_dist = %s' % b_dist)
+        _, b_path = ch.backtrack(self.s-1, self.t-1) if b_dist != -1 else (None, [])
+        print('is_mismatch b_dist = %s, b_path = %s' % (b_dist, b_path))
+        result = a_dist < b_dist
+        #print('is_mismatch %s' % result)
+        return result, a_dist, a_path, b_dist, b_path
 
     def _save(self):
         temp_filename = self.output_filename + '.tmp'
@@ -131,6 +145,13 @@ class GraphMinimizer(object):
         self.cost = deepcopy(cost)
         self.s = s
         self.t = t
+
+    def _shorten_path(self, reference_path):
+        candidates = reference_path[1:-1]
+        old_s = self.s
+        self.s = random.choice(candidates) + 1
+        print('>>>>>>>>>>>>>>>>> shortest_path reference_path: %s' % reference_path)
+        print('Trying new s %s instead of old s %s' % (self.s, old_s))
 
     def _eliminate_edges(self):
         ok, u, v = self._pick_edge()

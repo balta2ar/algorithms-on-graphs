@@ -3,8 +3,8 @@ import sys
 import itertools
 
 def get_path(filename):
-    with open(filename) as file:
-        path = [int(v) for v in file.readline().strip().split()]
+    with open(filename) as file_:
+        path = [int(v) for v in file_.readline().strip().split()]
     return path
 
 def pairwise(iterable):
@@ -27,14 +27,20 @@ edge [fontsize=8 arrowsize=0.6 len=2];
 ''')
     path = set(pairwise(get_path(path_filename)))
 
-    with open(filename) as file:
-        nv, ne = file.readline().strip().split()
+    with open(filename) as file_:
+        nv, ne = file_.readline().strip().split()
         nv, ne = int(nv), int(ne)
 
         for _ in range(ne):
-            u, v, c = file.readline().strip().split()
+            u, v, c = file_.readline().strip().split()
             color = "#FF0000A0" if (int(u), int(v)) in path else "#00000030"
             print('    %s -> %s [label="%s" color="%s"];' % (u, v, c, color))
+
+        file_.readline()
+        s, t = file_.readline().strip().split()
+        print('labelloc="t";')
+        title = '%s => %s' % (s, t)
+        print('label="%s";' % title)
 
     print('}')
 
