@@ -39,7 +39,7 @@ edge [fontsize=8 arrowsize=0.6 len=2];
         file_.readline()
         s, t = file_.readline().strip().split()
         print('labelloc="t";')
-        title = '%s => %s' % (s, t)
+        title = '%s => %s (%s nodes, %s edges)' % (s, t, nv, ne)
         print('label="%s";' % title)
 
     print('}')

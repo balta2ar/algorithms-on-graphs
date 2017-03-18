@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import random
+from math import ceil
 from copy import deepcopy
 
 from dist_preprocess_small import DistPreprocessSmall
@@ -82,15 +83,22 @@ class GraphMinimizer(object):
         while self.n > 0:
             #n, m, adj, cost, _x, _y, s, t = read_graph_from_file('minimize.in')
             print('n, m, s, t', self.n, self.m, self.s, self.t)
-            self._eliminate_edges()
+            self._eliminate_edges(random.randint(1, 5))
             self._remove_isolated_nodes()
 
-            mismatch, a_dist, a_path, b_dist, b_path = self._verify()
+            # if self._get_min_cost() > 1:
+            #     self._verify()
+            #     self._minimize_cost()
+            #     self._verify()
+
+            mismatch, a_dist, a_path, _b_dist, _b_path = self._verify()
             print('verify results', mismatch, a_dist, a_path, 's t', self.s, self.t)
+
             if not mismatch and a_dist > 0 and len(a_path) > 2:
                 self._shorten_path(a_path)
                 self._verify()
-            # time.sleep(0.5)
+
+            #time.sleep(0.5)
 
     def _verify(self):
         mismatch, a_dist, a_path, b_dist, b_path = self._is_mismatch()
@@ -146,22 +154,48 @@ class GraphMinimizer(object):
         self.s = s
         self.t = t
 
+    def _minimize_cost(self):
+
+        # print('min_cost', min_cost)
+        # self._reduce_cost(self.cost[0], min_cost-1)
+        # self._reduce_cost(self.cost[1], min_cost-1)
+        self._divide_cost(self.cost[0], 2)
+        self._divide_cost(self.cost[1], 2)
+
+    def _get_min_cost(self):
+        min_cost = None
+        for us in self.cost[0]:
+            for u in us:
+                min_cost = u if min_cost is None else min(min_cost, u)
+        return min_cost
+
+    def _reduce_cost(self, costs, delta):
+        for node_costs in costs:
+            for i, _ in enumerate(node_costs):
+                node_costs[i] -= delta
+
+    def _divide_cost(self, costs, divider):
+        for node_costs in costs:
+            for i, _ in enumerate(node_costs):
+                #node_costs[i] = round(node_costs[i] / divider)
+                node_costs[i] = ceil(node_costs[i] / divider)
+
     def _shorten_path(self, reference_path):
         candidates = reference_path[1:-1]
         old_s = self.s
         self.s = random.choice(candidates) + 1
-        print('>>>>>>>>>>>>>>>>> shortest_path reference_path: %s' % reference_path)
+        print('shortest_path reference_path: %s' % reference_path)
         print('Trying new s %s instead of old s %s' % (self.s, old_s))
 
-    def _eliminate_edges(self):
-        ok, u, v = self._pick_edge()
-        #ok, u, v, v_index = True, 39, 91, 17
-        if ok:
-            print('picked', u, v)
-            self._remove_edge(u, v)
-            self.m -= 1
-        else:
-            print('could not pick edge')
+    def _eliminate_edges(self, num_edges):
+        for _ in range(num_edges):
+            ok, u, v = self._pick_edge()
+            if ok:
+                print('picked', u, v)
+                self._remove_edge(u, v)
+                self.m -= 1
+            else:
+                print('could not pick edge')
 
     def _pick_edge(self):
         u = random.randint(0, self.n-1)
@@ -185,7 +219,7 @@ class GraphMinimizer(object):
         last_isolated_node = None
         for i in range(len(self.adj[0])-1, -1, -1):
         #for i in range(0, len(adj[0])):
-            if len(self.adj[0][i]) == 0 and len(self.adj[1][i]) == 0:
+            if not self.adj[0][i] and not self.adj[1][i]:
                 last_isolated_node = i
                 break
 
