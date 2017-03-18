@@ -36,11 +36,15 @@ edge [fontsize=8 arrowsize=0.6 len=2];
             color = "#FF0000A0" if (int(u), int(v)) in path else "#00000030"
             print('    %s -> %s [label="%s" color="%s"];' % (u, v, c, color))
 
-        file_.readline()
-        s, t = file_.readline().strip().split()
-        print('labelloc="t";')
-        title = '%s => %s (%s nodes, %s edges)' % (s, t, nv, ne)
-        print('label="%s";' % title)
+        try:
+            file_.readline()
+            s, t = file_.readline().strip().split()
+            print('labelloc="t";')
+            title = '%s => %s (%s nodes, %s edges)' % (s, t, nv, ne)
+            print('label="%s";' % title)
+        except ValueError:
+            # This graph probably does not contain queries
+            pass
 
     print('}')
 

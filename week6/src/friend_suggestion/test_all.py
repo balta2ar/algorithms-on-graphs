@@ -15,16 +15,23 @@ def readl(file_):
     return list(map(int, file_.readline().strip().split()))
 
 
-def read_graph_from_file(filename):
+def read_graph_from_file(filename, with_coords=True):
     with open(filename) as file_:
         n, m = readl(file_)
 
-        x = [0 for _ in range(n)]
-        y = [0 for _ in range(n)]
-        for i in range(n):
-            a, b = readl(file_)
-            x[i] = a
-            y[i] = b
+        x, y = None, None
+        if with_coords:
+            try:
+                x = [0 for _ in range(n)]
+                y = [0 for _ in range(n)]
+                for i in range(n):
+                    a, b = readl(file_)
+                    x[i] = a
+                    y[i] = b
+            except ValueError:
+                # ok, this graph probably does not have coords, let's try
+                # without them
+                return read_graph_from_file(filename, with_coords=False)
 
         # adj = [[] for _ in range(n)]
         # cost = [[] for _ in range(n)]
@@ -45,12 +52,16 @@ def read_graph_from_file(filename):
     return n, m, adj, cost, x, y
 
 
-def read_queries_from_file(filename):
+def read_queries_from_file(filename, with_coords=True):
     with open(filename) as file_:
         n, m = readl(file_)
-        for _ in range(n + m):
+        skip_count = n + m if with_coords else m
+        for _ in range(skip_count):
             readl(file_)
-        n = readl(file_)[0]
+        try:
+            n = readl(file_)[0]
+        except IndexError:
+            return read_queries_from_file(filename, with_coords=False)
         return [readl(file_) for _ in range(n)]
 
 
@@ -71,20 +82,20 @@ class TestDistPreprocessSmall(unittest.TestCase):
         expected = read_lines_from_file(output_filename)
         self.assertEqual(expected, actual)
 
-        # self._check_all_queries(input_filename, output_filename)
+        self._check_all_queries(input_filename, output_filename)
 
     def _check_all_queries(self, input_filename, output_filename):
         n, m, adj, cost, x, y = read_graph_from_file(input_filename)
-        ch = DistPreprocessSmall(n, m, adj, cost, x, y)
         dijk = DijkstraOnedirectional(n, m, adj, cost, x, y)
+        ch = DistPreprocessSmall(n, m, adj, cost, x, y)
         #alg = AStarBidirectional(n, m, adj, cost, x, y)
         #alg = AStarOnedirectional(n, m, adj, cost, x, y)
         #queries = read_queries_from_file(input_filename)
 
         for u in range(n):
             for v in range(n):
-                a = ch.query(u, v)
-                b = dijk.query(u, v)
+                a = dijk.query(u, v)
+                b = ch.query(u, v)
                 self.assertEqual(a, b)
                 # answers = set([ch.query(u-1, v-1),
                 #                dijk.query(u-1, v-1)])
@@ -105,8 +116,11 @@ class TestDistPreprocessSmall(unittest.TestCase):
     def test_case2(self):
         self._compare('test_astar/case2.in', 'test_astar/case2.out')
 
-    def test_case3(self):
-        self._compare('test_astar/case3.in', 'test_astar/case3.out')
+    def test_case2_1_min(self):
+        self._compare('test_ch/case2-1-min.in', 'test_ch/case2-1-min.out')
+
+    # def test_case3(self):
+    #     self._compare('test_astar/case3.in', 'test_astar/case3.out')
 
     # def test_gen10(self):
     #     self._compare('test_astar/gen10.in', 'test_astar/gen10.out')
