@@ -204,3 +204,5 @@ python stress.py --random-queries 0 --profile --hide-results <  2> /dev/null  28
 
 [_] demonstrate my case with 7->4 excluding 3, witness search limitation
     heuristic
+
+[_] difference between shortcut_cover and shortcut_count
