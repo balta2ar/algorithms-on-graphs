@@ -194,6 +194,13 @@ python stress.py --random-queries 0 --profile --hide-results <  2> /dev/null  28
 
 [_] is visited essential for one-directional? for bi-directional?
 
-[_] CH: mistake in heuristic: max max?
+[_] CH: mistake in heuristic: max max? or max min?
 
 [_] does not work with levels
+
+[_] can we used shortcuts to find witnesses? modifying graph in-place?
+
+[_] use Onedirectional or Bidirectional Dijkstra in preprocessing?
+
+[_] demonstrate my case with 7->4 excluding 3, witness search limitation
+    heuristic

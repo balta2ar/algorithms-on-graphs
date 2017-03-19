@@ -28,19 +28,42 @@ edge [fontsize=8 arrowsize=0.6 len=2];
     path = set(pairwise(get_path(path_filename)))
 
     with open(filename) as file_:
-        nv, ne = file_.readline().strip().split()
-        nv, ne = int(nv), int(ne)
+        num_vertices, num_edges = file_.readline().strip().split()
+        num_vertices, num_edges = int(num_vertices), int(num_edges)
 
-        for _ in range(ne):
+        # Read edges into a buffer
+        edges = []
+        for _ in range(num_edges):
             u, v, c = file_.readline().strip().split()
-            color = "#FF0000A0" if (int(u), int(v)) in path else "#00000030"
-            print('    %s -> %s [label="%s" color="%s"];' % (u, v, c, color))
+            edges.append((int(u), int(v), c))
+
+        # Skip queries
+        num_queries, = file_.readline().strip().split()
+        s, t = None, None
+        for _ in range(int(num_queries)):
+            if s is None:
+                s, t = file_.readline().strip().split()
+            else:
+                file_.readline()
+
+        # Read shortcuts
+        shortcuts = dict()
+        num_shortcuts, = file_.readline().strip().split()
+        for _ in range(int(num_shortcuts)):
+            u, v = file_.readline().strip().split()
+            shortcuts[(int(u), int(v))] = None
+
+        # Draw edges
+        for u, v, c in edges:
+            color = "#FF0000A0" if (int(u), int(v)) in path else "#00000050"
+            style = 'style=dashed' if (u, v) in shortcuts else ''
+            print('    %s -> %s [label="%s" color="%s" %s];' % (u, v, c, color, style))
 
         try:
-            file_.readline()
-            s, t = file_.readline().strip().split()
+            #file_.readline()
+            #s, t = file_.readline().strip().split()
             print('labelloc="t";')
-            title = '%s => %s (%s nodes, %s edges)' % (s, t, nv, ne)
+            title = '%s => %s (%s nodes, %s edges)' % (s, t, num_vertices, num_edges)
             print('label="%s";' % title)
         except ValueError:
             # This graph probably does not contain queries

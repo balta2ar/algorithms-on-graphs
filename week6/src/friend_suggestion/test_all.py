@@ -119,6 +119,9 @@ class TestDistPreprocessSmall(unittest.TestCase):
     def test_case2_1_min(self):
         self._compare('test_ch/case2-1-min.in', 'test_ch/case2-1-min.out')
 
+    def test_case3_1_min(self):
+        self._compare('test_ch/case3-1-min.in', 'test_ch/case3-1-min.out')
+
     # def test_case3(self):
     #     self._compare('test_astar/case3.in', 'test_astar/case3.out')
 

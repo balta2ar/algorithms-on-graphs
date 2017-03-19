@@ -11,7 +11,7 @@ import logging
 
 
 FORMAT = '%(asctime)-15s %(levelname)s %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=FORMAT, level=logging.ERROR)
 _logger = logging.getLogger(__name__)
 
 
@@ -135,6 +135,7 @@ class DistPreprocessSmall:
         # Implement preprocessing here
         self.witness_searcher = _DijkstraOnedirectionalWitnessSearch(
             n, m, adj, cost, self.visited[0])
+
         self.preprocess()
 
         # cached_cost = self.load_cache()
@@ -152,6 +153,10 @@ class DistPreprocessSmall:
             for u, vs in enumerate(self.adj[0]):
                 for v_index, v in enumerate(vs):
                     file_.write('%s %s %s\n' % (u+1, v+1, self.cost[0][u][v_index]))
+            file_.write('0\n') # no queries
+            file_.write('%s\n' % len(self.shortcuts))
+            for u, v in self.shortcuts:
+                file_.write('%s %s\n' % (u+1, v+1))
 
     def load_cache(self):
         try:
@@ -161,7 +166,7 @@ class DistPreprocessSmall:
                 # for line in cache_:
                 #     landmark = [int(x) for x in line.strip().split()]
                 #     costs.append(landmark)
-            print('Loaded CH edges from %s' % DistPreprocessSmall.CACHE_FILENAME)
+            _logger.info('Loaded CH edges from %s', DistPreprocessSmall.CACHE_FILENAME)
             return costs
         except IOError:
             return None
@@ -182,49 +187,63 @@ class DistPreprocessSmall:
 
         Output: augmented graph + node order.
         """
+        #self.save_to_file('ch-steps1/contracted-step%s.in' % 0)
         for u in range(self.n):
-            #_logger.info('contract %s', u)
+            _logger.info('contract %s', u)
             self.contract(u)
+            #self.save_to_file('ch-steps1/contracted-step%s.in' % (u+1))
             #self.save_to_file('untracked/contracted-step%s.in' % u)
 
         #from pprint import pformat
         #_logger.info('shortcuts: %s', pformat(self.shortcuts))
+        _logger.info('# shortcuts: %s', len(self.shortcuts))
 
-    def contract(self, v):
-        # outgoing_nodes = self.adj[0][v]
-        # incoming_nodes = self.adj[1][v]
+    def contract(self, node):
+        # outgoing_nodes = self.adj[0][node]
+        # incoming_nodes = self.adj[1][node]
 
         # 3. Try to find witness path
         #    Witness search: run one directional Dijkstra from each predecessor
         #    (no target, limit max cost, limit number of hops)
-        max_witness_path_cost = self.get_max_witness_path_cost(v)
+
+        # This bound may be too relaxed.
+        #max_witness_path_cost = self.get_max_witness_path_cost(node)
         new_shortcuts = dict()
-        for (u_index, u), (w_index, w) in self.iter_candidates(v):
 
-            #_logger.info('doing witness search (%s,%s) max=%s', u, w, max_witness_path_cost)
-            witness_path_cost = self.witness_searcher.query(u, w, v, max_witness_path_cost)
+        for (u_index, u), (w_index, w) in self.iter_candidates(node):
+
+            # This is maximum for one pair of (u, v), (v, w). It's a very strict
+            # bound.
+            # max_witness_path_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
+
+            # Current incoming + max of all outgoing edges.
+            max_witness_path_cost = self.cost[1][node][u_index] + max(self.cost[0][node])
+
+            _logger.info('doing witness search (%s,%s) max=%s', u, w, max_witness_path_cost)
+            witness_path_cost = self.witness_searcher.query(u, w, node, max_witness_path_cost)
             if witness_path_cost == -1:
-                u_w_cost = self.cost[1][v][u_index] + self.cost[0][v][w_index]
-                #_logger.info('adding arc (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
+                u_w_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
+                _logger.info('saving arc to buffer (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
 
-                new_shortcuts[(u, w)] = (v, u_w_cost)
+                new_shortcuts[(u, w)] = (node, u_w_cost)
                 # self.add_arc(u, w, u_w_cost)
-                # self.shortcuts[(u, w)] = (v, u_w_cost)
+                # self.shortcuts[(u, w)] = (node, u_w_cost)
 
-                #self.shortcuts.append(Shortcut(u, v, w, u_w_cost))
+                #self.shortcuts.append(Shortcut(u, node, w, u_w_cost))
             else:
-                pass
-                #witness_path = self.witness_searcher.backtrack(u, w)
-                #_logger.info('found witness path %s of cost %s for (%s,%s), max=%s',
-                #             witness_path, witness_path_cost, u, w, max_witness_path_cost)
+                witness_path = self.witness_searcher.backtrack(u, w)
+                _logger.info('found witness path %s of cost %s for (%s,%s), max=%s',
+                             witness_path, witness_path_cost, u, w, max_witness_path_cost)
+                #pass
 
         for (u, w), (v, u_w_cost) in new_shortcuts.items():
+            _logger.info('actually adding arc (%s,%s v %s) = %s, max=%s', u, w, v, u_w_cost, max_witness_path_cost)
             self.add_arc(u, w, u_w_cost)
             self.shortcuts[(u, w)] = (v, u_w_cost)
 
-        self.mark_visited(v)
-        self.rank.append(v)
-        self.level[v] = self.counter
+        self.mark_visited(node)
+        self.rank.append(node)
+        self.level[node] = self.counter
         self.counter += 1
 
     # def find_witness_path(self, u, w, v, max_cost):
@@ -235,34 +254,36 @@ class DistPreprocessSmall:
         incoming_nodes = self.adj[1][v]
         for (u_index, u), (w_index, w) in product(enumerate(incoming_nodes),
                                                   enumerate(outgoing_nodes)):
-            if not self.visited[0][u] and not self.visited[0][w]:
+            # TODO u != w???
+            if u != w and not self.visited[0][u] and not self.visited[0][w]:
                 yield (u_index, u), (w_index, w)
 
-    def get_max_witness_path_cost(self, v):
-        # outgoing_nodes = self.adj[0][v]
-        # incoming_nodes = self.adj[1][v]
+    def get_max_witness_path_cost(self, node):
+        # outgoing_nodes = self.adj[0][node]
+        # incoming_nodes = self.adj[1][node]
 
         # 1. Find max sum of all segments (incoming + outgoing edges)
         # for (u_index, u), (w_index, w) in product(enumerate(incoming_nodes),
         #                                           enumerate(outgoing_nodes)):
         max_u_w_cost = 0
-        for (u_index, _u), (w_index, w) in self.iter_candidates(v):
-            u_w_cost = self.cost[1][v][u_index] + self.cost[0][v][w_index]
+        for (u_index, _u), (w_index, w) in self.iter_candidates(node):
+            u_w_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
             max_u_w_cost = max(max_u_w_cost, u_w_cost)
 
         # for (u_index, u), (w_index, w) in product(enumerate(incoming_nodes),
         #                                           enumerate(outgoing_nodes)):
-        #     u_w_cost = self.cost[1][v][u_index] + self.cost[0][v][w_index]
+        #     u_w_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
         # 2. Find min w' -> w cost
         min_w_prime_w_cost = self.inf
-        for w in self.adj[0][v]:
+        for w in self.adj[0][node]:
             for w_prime_index, w_prime in enumerate(self.adj[1][w]):
                 if not self.visited[0][w] and not self.visited[0][w_prime]:
+                    # TODO: min or max???
                     min_w_prime_w_cost = min(min_w_prime_w_cost,
                                              self.cost[1][w][w_prime_index])
 
-        max_witness_path_cost = max_u_w_cost - min_w_prime_w_cost
-        #max_witness_path_cost = max_u_w_cost
+        #max_witness_path_cost = max_u_w_cost - min_w_prime_w_cost
+        max_witness_path_cost = max_u_w_cost
         return max_witness_path_cost
 
     def mark_visited(self, x):
@@ -271,16 +292,21 @@ class DistPreprocessSmall:
             self.workset.append(x)
 
     def add_arc(self, u, v, c):
+        """
+        Return true if new edge has been added. False if an existing edge has
+        been updated.
+        """
         def update(adj, cost, u, v, c):
             for i in range(len(adj[u])):
                 if adj[u][i] == v:
                     cost[u][i] = min(cost[u][i], c)
-                    return
+                    return True
             adj[u].append(v)
             cost[u].append(c)
 
-        update(self.adj[0], self.cost[0], u, v, c)
-        update(self.adj[1], self.cost[1], v, u, c)
+        a = update(self.adj[0], self.cost[0], u, v, c)
+        b = update(self.adj[1], self.cost[1], v, u, c)
+        return a or b
 
     # Makes shortcuts for contracting node v
     def shortcut(self, v):
@@ -306,7 +332,7 @@ class DistPreprocessSmall:
         #self.visited = [False] * self.n
 
     def query(self, source, target):
-        #_logger.info('query %s -> %s', source, target)
+        _logger.info('query %s -> %s', source, target)
         if source == target:
             return 0
 
@@ -323,7 +349,7 @@ class DistPreprocessSmall:
             self.do_iteration(queue, 1)
 
         result = -1 if self.estimate == self.inf else self.estimate
-        #_logger.info('query %s -> %s result %s', source, target, result)
+        _logger.info('query %s -> %s result %s', source, target, result)
         if result != -1:
             self.backtrack(source, target)
         return result
@@ -346,7 +372,7 @@ class DistPreprocessSmall:
         return None
 
     def visit(self, queue, side, u):
-        #_logger.info('visit %s, side %s', u, side)
+        _logger.info('visit %s, side %s', u, side)
         local_adj = self.adj
         local_dist = self.dist
         local_cost = self.cost
@@ -361,15 +387,15 @@ class DistPreprocessSmall:
 
             # Consider only edges going up
             if local_level[u] >= local_level[v]:
-                # _logger.info('skipping due to level(%s) %s >= level(%s) %s',
-                #              u, local_level[u], v, local_level[v])
+                _logger.info('skipping due to level(%s) %s >= level(%s) %s',
+                             u, local_level[u], v, local_level[v])
                 continue
 
             alt = local_dist[side][u] + local_cost[side][u][v_index]
-            # _logger.info('alt u v %s %s = %s', u, v, alt)
+            _logger.info('alt u v %s %s = %s', u, v, alt)
 
             if alt < local_dist[side][v]:
-                #_logger.info('new alt %s for u v %s %s side %s', alt, u, v, side)
+                _logger.info('new alt %s for u v %s %s side %s', alt, u, v, side)
                 local_dist[side][v] = alt
                 local_parent[side][v] = u
                 queue[side].put((alt, v))
@@ -413,17 +439,17 @@ class DistPreprocessSmall:
             last = self.parent[0][last]
         path.append(last)
         path.reverse()
-        # print('path first part', self._human_path(path))
+        _logger.info('path first part HUMAN %s', self._human_path(path))
 
         last = u_best
         while last != target:
             last = self.parent[1][last]
             path.append(last)
-        # print('path first+last part', self._human_path(path))
+        _logger.info('path first+last part HUMAN %s', self._human_path(path))
 
         path = self.expand_shortcuts(path)
         #print(' '.join(map(lambda x: str(x+1), path)))
-        # print(self._human_path(path))
+        _logger.info('result path HUMAN %s', self._human_path(path))
         return dist, path
 
     def expand_shortcuts(self, path):
