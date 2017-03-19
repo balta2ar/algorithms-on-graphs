@@ -201,9 +201,38 @@ class DistPreprocessLarge:
         Output: augmented graph + node order.
         """
         #self.save_to_file('ch-steps1/contracted-step%s.in' % 0)
+        queue = PriorityQueue()
         for u in range(self.n):
-            _logger.debug('contract %s', u)
-            self.contract(u)
+            u_importance, _shortcut_count, _level = self.shortcut(u)
+            _logger.info('initial importance of %s = %s', u, u_importance)
+            queue.put((u_importance, u))
+
+        while not queue.empty():
+            _, u = queue.get()
+
+            u_importance, _shortcut_count, _level = self.shortcut(u)
+            if queue.empty():
+                _logger.info('contract last %s', u)
+                self.contract(u)
+                break
+
+            _, peeked_v = queue.queue[0]
+            peeked_v_importance, _shortcut_count, _level = self.shortcut(peeked_v)
+            _logger.info('current importance of u %s = %s, v %s = %s',
+                         u, u_importance, peeked_v, peeked_v_importance)
+
+            # We want u to be least important, however as importance has negated
+            # sign, we find the largest u with largest importance
+            if u_importance <= peeked_v_importance:
+                _logger.info('contract %s', u)
+                self.contract(u)
+            else:
+                queue.put((u_importance, u))
+                _logger.info('putting back to queue %s', u)
+
+        # for u in range(self.n):
+        #     _logger.debug('contract %s', u)
+        #     self.contract(u)
             #self.save_to_file('ch-steps1/contracted-step%s.in' % (u+1))
             #self.save_to_file('untracked/contracted-step%s.in' % u)
 
@@ -211,7 +240,7 @@ class DistPreprocessLarge:
         #_logger.info('shortcuts: %s', pformat(self.shortcuts))
         _logger.warning('# shortcuts: %s', len(self.shortcuts))
 
-    def contract(self, node):
+    def contract(self, node, dry_run=False):
         outgoing_nodes = self.adj[0][node]
         incoming_nodes = self.adj[1][node]
 
@@ -255,16 +284,19 @@ class DistPreprocessLarge:
                     #               witness_path, dist, u, w, max_witness_path_cost)
                     pass
 
-        for (u, w), (v, u_w_cost) in new_shortcuts.items():
-            _logger.debug('  actually adding arc (%s,%s v %s) = %s, max=%s', u, w, v, u_w_cost, max_witness_path_cost)
-            self.add_arc(u, w, u_w_cost)
-            self.shortcuts[(u, w)] = (v, u_w_cost)
-        _logger.debug('new shortcuts %s', len(new_shortcuts))
+        if not dry_run:
+            for (u, w), (v, u_w_cost) in new_shortcuts.items():
+                _logger.debug('  actually adding arc (%s,%s v %s) = %s, max=%s', u, w, v, u_w_cost, max_witness_path_cost)
+                if self.add_arc(u, w, u_w_cost):
+                    self.shortcuts[(u, w)] = (v, u_w_cost)
+            _logger.debug('new shortcuts %s', len(new_shortcuts))
 
-        self.mark_visited(node)
-        self.rank.append(node)
-        self.level[node] = self.counter
-        self.counter += 1
+            self.mark_visited(node)
+            self.rank.append(node)
+            self.level[node] = self.counter
+            self.counter += 1
+
+        return len(new_shortcuts)
 
     # def find_witness_path(self, u, w, v, max_cost):
     #     pass
@@ -326,19 +358,30 @@ class DistPreprocessLarge:
 
         a = update(self.adj[0], self.cost[0], u, v, c)
         b = update(self.adj[1], self.cost[1], v, u, c)
-        return a or b
+        return not (a or b)
 
     # Makes shortcuts for contracting node v
     def shortcut(self, v):
         # Implement this method yourself
 
         # Compute the node importance in the end
-        shortcut_count = 0
-        neighbors = 0
+        shortcut_count = self.contract(v, dry_run=True)
+        edge_difference = shortcut_count - len(self.adj[0][v]) - len(self.adj[1][v])
+
+        contracted_neighbors = 0
+        outgoing_nodes = self.adj[0][v]
+        incoming_nodes = self.adj[1][v]
+        for u in outgoing_nodes:
+            if self.visited[0][u]:
+                contracted_neighbors += 1
+        for u in incoming_nodes:
+            if self.visited[0][u]:
+                contracted_neighbors += 1
+
         shortcut_cover = 0
         level = 0
         # Compute correctly the values for the above heuristics before computing the node importance
-        importance = (shortcut_count - len(self.adj[0][v]) - len(self.adj[1][v])) + neighbors + shortcut_cover + level
+        importance = edge_difference + contracted_neighbors + shortcut_cover + level
         return importance, shortcut_count, level
 
     # --- QUERY PART ----------------------------------------------------------
@@ -369,9 +412,12 @@ class DistPreprocessLarge:
             self.do_iteration(queue, 1)
 
         result = -1 if self.estimate == self.inf else self.estimate
+
+        # _logger.setLevel(logging.DEBUG)
         _logger.info('query %s -> %s result %s', source, target, result)
-        # if result != -1:
-        #     self.backtrack(source, target)
+        if result != -1:
+            self.backtrack(source, target)
+
         return result
 
     def do_iteration(self, queue, side):
@@ -484,20 +530,19 @@ class DistPreprocessLarge:
             u, w = queue.popleft(), queue.popleft()
             if (u, w) in self.shortcuts:
                 v, _cost = self.shortcuts[(u, w)]
-                # print('expanded %s %s %s = %s' % (u, v, w, _cost))
+                _logger.debug('expanded %s %s %s = %s', u, v, w, _cost)
                 queue.appendleft(w)
                 queue.appendleft(v)
                 queue.appendleft(u)
-                # print('queue', queue)
+                _logger.debug('queue %s', queue)
             else:
-                # print('not a shortcut %s %s' % (u, w))
+                _logger.debug('not a shortcut %s %s', u, w)
                 result.append(u)
                 queue.appendleft(w)
-                # print('queue', queue)
-                # print('result', result)
+                _logger.debug('queue %s result %s', queue, result)
         result.append(queue.popleft())
 
-        # print('path after expansion', self._human_path(result))
+        _logger.debug('path after expansion %s', self._human_path(result))
         return result
 
 
@@ -528,7 +573,7 @@ def main():
     ch = DistPreprocessLarge(n, m, adj, cost)
     print("Ready")
     sys.stdout.flush()
-    #ch.save_to_file('untracked/contracted.in')
+    ch.save_to_file('untracked/contracted.large.in')
 
     t, = readl(file_)
     for _ in range(t):

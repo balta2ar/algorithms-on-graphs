@@ -326,7 +326,7 @@ class DistPreprocessSmall:
 
         a = update(self.adj[0], self.cost[0], u, v, c)
         b = update(self.adj[1], self.cost[1], v, u, c)
-        return a or b
+        return not (a or b)
 
     # Makes shortcuts for contracting node v
     def shortcut(self, v):
