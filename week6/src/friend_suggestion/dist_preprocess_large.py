@@ -139,8 +139,7 @@ class DistPreprocessLarge:
         # Levels of nodes for node ordering heuristics
         self.level = [0] * n
         # Positions of nodes in the node ordering
-        #self.rank = [0] * n
-        self.rank = []
+        self.rank = [0] * n
         self.counter = 0
 
         self.estimate = None
@@ -221,14 +220,12 @@ class DistPreprocessLarge:
             _logger.info('current importance of u %s = %s, v %s = %s',
                          u, u_importance, peeked_v, peeked_v_importance)
 
-            # We want u to be least important, however as importance has negated
-            # sign, we find the largest u with largest importance
             if u_importance <= peeked_v_importance:
                 _logger.info('contract %s', u)
                 self.contract(u)
             else:
-                queue.put((u_importance, u))
                 _logger.info('putting back to queue %s', u)
+                queue.put((u_importance, u))
 
         # for u in range(self.n):
         #     _logger.debug('contract %s', u)
@@ -251,6 +248,7 @@ class DistPreprocessLarge:
         # This bound may be too relaxed.
         #max_witness_path_cost = self.get_max_witness_path_cost(node)
         new_shortcuts = dict()
+        shortcut_cover = 0
 
         #for (u_index, u), (w_index, w) in self.iter_candidates(node):
         for (u_index, u) in enumerate(incoming_nodes):
@@ -268,7 +266,7 @@ class DistPreprocessLarge:
             # witness_path_cost = self.witness_searcher.query(u, w, node, max_witness_path_cost)
 
             for (w_index, w) in enumerate(outgoing_nodes):
-                max_witness_path_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
+                #max_witness_path_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
                 # self.witness_searcher.query(u, w, node, max_witness_path_cost)
 
                 dist = self.witness_searcher.get_dist(w)
@@ -276,8 +274,9 @@ class DistPreprocessLarge:
                 if dist == -1:
                     u_w_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
                     new_shortcuts[(u, w)] = (node, u_w_cost)
+                    shortcut_cover += 1
 
-                    _logger.debug('      saving arc to buffer (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
+                    # _logger.debug('      saving arc to buffer (%s,%s) = %s, max=%s', u, w, u_w_cost, max_witness_path_cost)
                 else:
                     # witness_path = self.witness_searcher.backtrack(u, w)
                     # _logger.debug('      found witness path %s of cost %s for (%s,%s), max=%s',
@@ -292,14 +291,21 @@ class DistPreprocessLarge:
             _logger.debug('new shortcuts %s', len(new_shortcuts))
 
             self.mark_visited(node)
-            self.rank.append(node)
-            self.level[node] = self.counter
+            self.rank[node] = self.counter
             self.counter += 1
 
-        return len(new_shortcuts)
+            # Update level of node's neighbors
+            #self.level[node] = self.counter
+            self.update_neighbor_node_levels(node)
 
-    # def find_witness_path(self, u, w, v, max_cost):
-    #     pass
+        return len(new_shortcuts), shortcut_cover
+
+    def update_neighbor_node_levels(self, v):
+        local_level = self.level
+        for u in self.adj[0][v]:
+            local_level[u] = max(local_level[u], local_level[v] + 1)
+        for u in self.adj[1][v]:
+            local_level[u] = max(local_level[u], local_level[v] + 1)
 
     def iter_candidates(self, v):
         outgoing_nodes = self.adj[0][v]
@@ -363,14 +369,14 @@ class DistPreprocessLarge:
     # Makes shortcuts for contracting node v
     def shortcut(self, v):
         # Implement this method yourself
-
-        # Compute the node importance in the end
-        shortcut_count = self.contract(v, dry_run=True)
-        edge_difference = shortcut_count - len(self.adj[0][v]) - len(self.adj[1][v])
-
-        contracted_neighbors = 0
         outgoing_nodes = self.adj[0][v]
         incoming_nodes = self.adj[1][v]
+
+        # Compute the node importance in the end
+        shortcut_count, shortcut_cover = self.contract(v, dry_run=True)
+        edge_difference = shortcut_count - len(outgoing_nodes) - len(incoming_nodes)
+
+        contracted_neighbors = 0
         for u in outgoing_nodes:
             if self.visited[0][u]:
                 contracted_neighbors += 1
@@ -378,8 +384,8 @@ class DistPreprocessLarge:
             if self.visited[0][u]:
                 contracted_neighbors += 1
 
-        shortcut_cover = 0
-        level = 0
+        # shortcut_cover = 0
+        level = self.level[v]
         # Compute correctly the values for the above heuristics before computing the node importance
         importance = edge_difference + contracted_neighbors + shortcut_cover + level
         return importance, shortcut_count, level
@@ -443,7 +449,7 @@ class DistPreprocessLarge:
         local_dist = self.dist
         local_cost = self.cost
         local_workset = self.workset
-        local_level = self.level
+        local_rank = self.rank
         local_parent = self.parent
 
         neighbors = local_adj[side][u]
@@ -452,9 +458,9 @@ class DistPreprocessLarge:
             #print(v, file=sys.stderr)
 
             # Consider only edges going up
-            if local_level[u] >= local_level[v]:
-                # _logger.debug('skipping due to level(%s) %s >= level(%s) %s',
-                              # u, local_level[u], v, local_level[v])
+            if local_rank[u] >= local_rank[v]:
+                # _logger.debug('skipping due to rank(%s) %s >= rank(%s) %s',
+                              # u, local_rank[u], v, local_rank[v])
                 continue
 
             alt = local_dist[side][u] + local_cost[side][u][v_index]
