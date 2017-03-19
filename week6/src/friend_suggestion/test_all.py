@@ -9,6 +9,7 @@ from landmarks import BreadthFirstSearchOneToAll
 from landmarks import LandmarksAStarOnedirectional
 from landmarks import LandmarksAStarBidirectional
 from dist_preprocess_small import DistPreprocessSmall
+from dist_preprocess_large import DistPreprocessLarge
 
 
 def readl(file_):
@@ -70,10 +71,10 @@ def read_lines_from_file(filename):
         return [int(line.strip()) for line in file_.readlines()]
 
 
-class TestDistPreprocessSmall(unittest.TestCase):
+class TestDistPreprocessLarge(unittest.TestCase):
     def _compare(self, input_filename, output_filename):
         n, m, adj, cost, x, y = read_graph_from_file(input_filename)
-        alg = DistPreprocessSmall(n, m, adj, cost, x, y)
+        alg = DistPreprocessLarge(n, m, adj, cost, x, y)
         #alg = DijkstraOnedirectional(n, m, adj, cost, x, y)
         #alg = AStarBidirectional(n, m, adj, cost, x, y)
         #alg = AStarOnedirectional(n, m, adj, cost, x, y)

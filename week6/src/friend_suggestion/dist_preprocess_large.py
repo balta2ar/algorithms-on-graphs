@@ -13,7 +13,7 @@ import logging
 
 FORMAT = '%(asctime)-15s %(levelname)s %(message)s'
 #logging.basicConfig(format=FORMAT, level=logging.DEBUG)
-logging.basicConfig(format=FORMAT, level=logging.INFO)
+logging.basicConfig(format=FORMAT, level=logging.ERROR)
 _logger = logging.getLogger(__name__)
 
 
@@ -225,6 +225,12 @@ class DistPreprocessLarge:
                 # _logger.info('contract last %s', u)
                 self.apply_shortcuts(new_shortcuts)
                 self.complete_contraction(u)
+                # for (u, w), (v, u_w_cost) in new_shortcuts.items():
+                #     if self.add_arc(u, w, u_w_cost):
+                #         self.shortcuts[(u, w)] = (v, u_w_cost)
+                # self.mark_visited(u)
+                # self.rank[u] = self.counter
+                # self.counter += 1
                 break
 
             #_logger.info('peeking %s', queue.queue[0])
@@ -253,6 +259,12 @@ class DistPreprocessLarge:
 
             self.apply_shortcuts(new_shortcuts)
             self.complete_contraction(u)
+            # for (u, w), (v, u_w_cost) in new_shortcuts.items():
+            #     if self.add_arc(u, w, u_w_cost):
+            #         self.shortcuts[(u, w)] = (v, u_w_cost)
+            # self.mark_visited(u)
+            # self.rank[u] = self.counter
+            # self.counter += 1
 
             for x in neighbors:
                 is_neighbor[x] = False
@@ -281,6 +293,7 @@ class DistPreprocessLarge:
         # be present, so we only update cost. Such updates are not counted.
         # It's expected that num_added_shortcuts <= shortcut_cover
         num_added_shortcuts = 0
+        searcher = self.witness_searcher
 
         #for (u_index, u), (w_index, w) in self.iter_candidates(node):
         for (u_index, u) in enumerate(incoming_nodes):
@@ -295,15 +308,17 @@ class DistPreprocessLarge:
 
             # _logger.debug('  doing witness search from %s to all max=%s',
             #               u, max_witness_path_cost)
-            self.witness_searcher.query(u, -1, node, max_witness_path_cost,
-                                        DistPreprocessLarge.MAX_WITNESS_HOPS)
+            searcher.query(u, -1, node, max_witness_path_cost,
+                           DistPreprocessLarge.MAX_WITNESS_HOPS)
             # witness_path_cost = self.witness_searcher.query(u, w, node, max_witness_path_cost)
 
             for (w_index, w) in enumerate(outgoing_nodes):
                 #max_witness_path_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
                 # self.witness_searcher.query(u, w, node, max_witness_path_cost)
 
-                dist = self.witness_searcher.get_dist(w)
+                #dist = self.witness_searcher.get_dist(w)
+                dist = -1 if searcher.dist[w] == searcher.inf else searcher.dist[w]
+
                 # _logger.debug('    witness path from u %s to w %s, cost %s', u, w, dist)
                 if dist == -1:
                     u_w_cost = self.cost[1][node][u_index] + self.cost[0][node][w_index]
@@ -326,26 +341,13 @@ class DistPreprocessLarge:
 
     def apply_shortcuts(self, new_shortcuts):
         for (u, w), (v, u_w_cost) in new_shortcuts.items():
-            #_logger.debug('  actually adding arc (%s,%s v %s) = %s, max=%s', u, w, v, u_w_cost, max_witness_path_cost)
             if self.add_arc(u, w, u_w_cost):
                 self.shortcuts[(u, w)] = (v, u_w_cost)
-        # _logger.debug('new shortcuts %s', len(new_shortcuts))
 
     def complete_contraction(self, node):
         self.mark_visited(node)
         self.rank[node] = self.counter
         self.counter += 1
-
-        # Update level of node's neighbors
-        #self.level[node] = self.counter
-        # self.update_neighbor_node_levels(node)
-
-    # def update_neighbor_node_levels(self, v):
-    #     local_level = self.level
-    #     for u in self.adj[0][v]:
-    #         local_level[u] = max(local_level[u], local_level[v] + 1)
-    #     for u in self.adj[1][v]:
-    #         local_level[u] = max(local_level[u], local_level[v] + 1)
 
     def iter_candidates(self, v):
         outgoing_nodes = self.adj[0][v]
@@ -620,7 +622,7 @@ def main():
     ch = DistPreprocessLarge(n, m, adj, cost)
     print("Ready")
     sys.stdout.flush()
-    ch.save_to_file('untracked/contracted.large.in')
+    #ch.save_to_file('untracked/contracted.large.in')
 
     t, = readl(file_)
     for _ in range(t):
