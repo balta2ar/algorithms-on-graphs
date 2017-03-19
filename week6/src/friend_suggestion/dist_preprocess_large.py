@@ -120,7 +120,7 @@ class _DijkstraOnedirectionalWitnessSearch:
 #Shortcut = namedtuple('Shortcut', 'u v w cost')
 
 
-class DistPreprocessSmall:
+class DistPreprocessLarge:
     CACHE_FILENAME = 'untracked/astar/ch.pkl.cache'
 
     def __init__(self, n, m, adj, cost, _x=None, _y=None):
@@ -174,18 +174,18 @@ class DistPreprocessSmall:
     def load_cache(self):
         try:
             costs = []
-            with open(DistPreprocessSmall.CACHE_FILENAME, 'rb') as cache_:
+            with open(DistPreprocessLarge.CACHE_FILENAME, 'rb') as cache_:
                 costs = pickle.load(cache_)
                 # for line in cache_:
                 #     landmark = [int(x) for x in line.strip().split()]
                 #     costs.append(landmark)
-            # _logger.info('Loaded CH edges from %s', DistPreprocessSmall.CACHE_FILENAME)
+            # _logger.info('Loaded CH edges from %s', DistPreprocessLarge.CACHE_FILENAME)
             return costs
         except IOError:
             return None
 
     def save_cache(self, obj):
-        with open(DistPreprocessSmall.CACHE_FILENAME, 'wb') as cache_:
+        with open(DistPreprocessLarge.CACHE_FILENAME, 'wb') as cache_:
             pickle.dump(obj, cache_, pickle.HIGHEST_PROTOCOL)
             # for landmark in self.costs:
             #     line = ' '.join(map(str, landmark))
@@ -525,7 +525,7 @@ def main():
         adj[1][v-1].append(u-1)
         cost[1][v-1].append(c)
 
-    ch = DistPreprocessSmall(n, m, adj, cost)
+    ch = DistPreprocessLarge(n, m, adj, cost)
     print("Ready")
     sys.stdout.flush()
     #ch.save_to_file('untracked/contracted.in')
