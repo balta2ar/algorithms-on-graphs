@@ -29,7 +29,7 @@ class _DijkstraOnedirectionalWitnessSearch:
         self.cost = cost
         self.inf = MAXLEN                        # All distances in the graph are smaller
         self.dist = [self.inf]*n                 # Initialize distances for forward and backward searches
-        #self.visited = [False]*n                 # visited[v] == True iff v was visited by forward or backward search
+        self.visited = [False]*n                 # visited[v] == True iff v was visited by forward or backward search
         self.workset = []                        # All the nodes visited by forward or backward search
         self.parent = [None]*n
         # These vertices are coming from parent class. After a vertice
@@ -43,12 +43,12 @@ class _DijkstraOnedirectionalWitnessSearch:
         for v in self.workset:
             self.dist[v] = self.inf
             #self.dist[v] = self.dist[v] = self.inf
-            #self.visited[v] = False
+            self.visited[v] = False
         self.workset = []
 
-    def get_dist(self, target):
-        return -1 if self.dist[target] == self.inf else self.dist[target]
-
+    # def get_dist(self, target):
+    #     return -1 if self.dist[target] == self.inf else self.dist[target]
+    #
     def query(self, source, target, ignored_node, max_cost, max_hops):
         """
         If target == -1, then search until stopped by other criterions
@@ -68,6 +68,7 @@ class _DijkstraOnedirectionalWitnessSearch:
         heappush(queue, (0, source))
         self.parent[source] = None
         self.workset.append(source)
+        self.visited[source] = True
         visit_count = 0
 
         while queue and visit_count < max_hops:
@@ -97,11 +98,12 @@ class _DijkstraOnedirectionalWitnessSearch:
 
             if alt < self.dist[v] and alt <= max_cost:
                 self.dist[v] = alt
-                heappush(queue, (alt, v))
-                self.workset.append(v)
                 self.parent[v] = u
+                if not self.visited[v]:
+                    heappush(queue, (alt, v))
+                    self.workset.append(v)
 
-        #self.visited[u] = True
+        self.visited[u] = True
         self.workset.append(u)
 
     def backtrack(self, source, target):
@@ -622,7 +624,7 @@ def main():
     ch = DistPreprocessLarge(n, m, adj, cost)
     print("Ready")
     sys.stdout.flush()
-    #ch.save_to_file('untracked/contracted.large.in')
+    ch.save_to_file('untracked/contracted.large.in')
 
     t, = readl(file_)
     for _ in range(t):

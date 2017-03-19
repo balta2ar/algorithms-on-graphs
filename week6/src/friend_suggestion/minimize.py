@@ -6,6 +6,7 @@ from math import ceil
 from copy import deepcopy
 
 from dist_preprocess_small import DistPreprocessSmall
+from dist_preprocess_large import DistPreprocessLarge
 from friend_suggestion import DijkstraOnedirectional
 
 
@@ -119,7 +120,7 @@ class GraphMinimizer(object):
         #print('a_dist after query %s' % a_dist)
         _, a_path = dijk.backtrack(self.s-1, self.t-1) if a_dist != -1 else (None, [])
         print('is_mismatch a_dist = %s, a_path = %s' % (a_dist, a_path))
-        ch = DistPreprocessSmall(self.n, self.m, deepcopy(self.adj),
+        ch = DistPreprocessLarge(self.n, self.m, deepcopy(self.adj),
                                  deepcopy(self.cost), None, None)
         b_dist = ch.query(self.s-1, self.t-1)
         print('is_mismatch b_dist = %s' % b_dist)
@@ -136,8 +137,9 @@ class GraphMinimizer(object):
             for u, vs in enumerate(self.adj[0]):
                 for v_index, v in enumerate(vs):
                     file_.write('%s %s %s\n' % (u+1, v+1, self.cost[0][u][v_index]))
-            file_.write('1\n')
+            file_.write('1\n') # requests
             file_.write('%s %s\n' % (self.s, self.t))
+            file_.write('0\n') # shortcuts
         os.rename(temp_filename, self.output_filename)
         self.backup = (self.n, self.m,
                        deepcopy(self.adj), deepcopy(self.cost),
@@ -167,7 +169,7 @@ class GraphMinimizer(object):
         for us in self.cost[0]:
             for u in us:
                 min_cost = u if min_cost is None else min(min_cost, u)
-        return min_cost
+        return min_cost if min_cost is not None else -1
 
     def _reduce_cost(self, costs, delta):
         for node_costs in costs:
